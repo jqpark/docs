@@ -634,12 +634,12 @@ while True:
 #-------------------------------------------------------------------------------
       l_order_type_list = []
       l_order_idx, l_order_tp, l_order_st = [0, 0, 0], [0, 0, 0], [0, 0, 0]
-      l_get_open=session.get_open_orders(category="linear",symbol=sym_bol,orderFilter='StopOrder')['result']['list']
+      l_get_open=session.get_open_orders(category="linear",symbol=sym_bol,orderFilter='Order')['result']['list']
       time.sleep(1)
       if(l_get_open != []):
-        l_order_type = pd.DataFrame(l_get_open)['stopOrderType']
+        l_order_type = pd.DataFrame(l_get_open)['orderType']
         for num in range(len(l_order_type)): l_order_type_list.append(l_order_type[num])
-      l_stop_order_list = [(l_stop_order["positionIdx"],l_stop_order["triggerPrice"], l_stop_order["stopLoss"]) for l_stop_order in l_get_open if l_stop_order.get("stopOrderType") == "Stop"]
+      l_stop_order_list = [(l_stop_order["positionIdx"],l_stop_order["price"], l_stop_order["stopLoss"]) for l_stop_order in l_get_open if l_stop_order.get("orderType") == "Limit"]
       if(l_stop_order_list != []):
         for list in range(len(l_stop_order_list)):
           if(l_stop_order_list[list][0] == 1):
@@ -692,8 +692,10 @@ while True:
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
       if(sum(keep_item) >= ordered_item) and (keep_item[item_no] == 0):
-        if(get_open != []):
+        if(m_get_open != []):
           session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+        if(l_get_open != []):
+          session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='Order')
         order_condition[item_no] = 0
         order_info[item_no] = 0
         pass
@@ -809,32 +811,24 @@ while True:
 #-------------------------------------------------------------------------------
 #'symbol,side,qty,price,position,stoploss'
 #-------------------------------------------------------------------------------
-        if(value_v_list[item_no][0] in (1, 2)):
-          if(order_idx[1] == 1) or (order_idx[2] == 2):
-            session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-            order_condition[item_no] = 'market_order_cancel'
-
-        if(value_v_list[item_no][0] in (3, 4)):
-          if(order_idx[1] == 1) or (order_idx[2] == 2):
+        if(value_v_list[item_no][0] not in (1, 2)):
+          if(l_order_idx[1] == 1) or (l_order_idx[2] == 2):
             session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='Order')
             order_condition[item_no] = 'limit_order_cancel'
+
+        if(value_v_list[item_no][0] not in (3, 4)):
+          if(m_order_idx[1] == 1) or (m_order_idx[2] == 2):
+            session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+            order_condition[item_no] = 'market_order_cancel'
           
         if(order_idx[1] == 1) and (short_qty != 0):
             if(order_st[1] > float(l_st_price)):
               session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
               time.sleep(1)
               order_condition[item_no] = 'L_order_cancel'
-            if(order_idx[1] == 1) or (order_idx[2] == 2):
-              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-              time.sleep(1)
-              order_condition[item_no] = 'L_order_cancel'
 
-        elif(order_idx[2] == 2) and (long_qty != 0):
+        if(order_idx[2] == 2) and (long_qty != 0):
             if(order_st[2] < float(s_st_price)):
-              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-              time.sleep(1)
-              order_condition[item_no] = 'S_order_cancel'
-            if(order_idx[1] == 1) or (order_idx[2] == 2):
               session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
               time.sleep(1)
               order_condition[item_no] = 'S_order_cancel'
