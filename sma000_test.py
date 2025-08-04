@@ -837,66 +837,47 @@ while True:
 #        if(value_s_list[item_no][0] == 1) and (value_v_list[item_no][1] > sym_price > value_v_list[item_no][2]):
         if(value_s_list[item_no][0] != 0) and (value_v_list[item_no][0] != 0):
 #-------------------------------------------------------------------------------
-          if(get_open == []) and (float(l_order_qty) != 0) and (float(s_order_qty) != 0):
+          if(m_get_open == []) and (l_get_open == []):
 #-------------------------------------------------------------------------------
-              if(long_qty == 0) and (short_qty == 0) and ((invest_usdt * 2) < avail_usdt):
-                if(float(min_value) < l_ex_value) and (value_v_list[item_no][0] in (1, 2):
-                  add_order = [sym_bol, 'Buy', l_order_qty, l_order_price, 1, l_st_price]
+              if(long_qty == 0) and (float(l_order_qty) != 0) and ((invest_usdt * 2) < avail_usdt):
+                if(float(min_value) < l_ex_value) and (value_v_list[item_no][0] == 1):
+                  add_order = [sym_bol, 'Buy', l_l_order_qty, l_l_order_price, 1, l_l_st_price]
                   order_limit_part(add_order)
-                  order_condition[item_no] = 'order_limit_order'
-                  order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
                   time.sleep(1)
-                if(float(min_value) < s_ex_value) and (value_v_list[item_no][0] in (1, 2):
-                  add_order = [sym_bol, 'Sell', s_order_qty, s_order_price, 2, s_st_price]
+                  add_order = [sym_bol, 'Buy', m_l_order_qty, 1, m_l_order_price, 1, m_l_st_price]
+                  conditional_market_part(add_order)
+                  time.sleep(1)
+                  order_condition[item_no] = 'L1_order'
+                  order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
+                if(float(min_value) < l_ex_value) and (value_v_list[item_no][0] == 3):
+                  add_order = [sym_bol, 'Buy', l_l_order_qty, l_l_order_price, 1, l_l_st_price]
                   order_limit_part(add_order)
-                  order_condition[item_no] = 'order_limit_order'
-                  order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
                   time.sleep(1)
+                  add_order = [sym_bol, 'Buy', m_l_order_qty, 1, m_l_order_price, 1, m_l_st_price]
+                  conditional_market_part(add_order)
+                  time.sleep(1)
+                  order_condition[item_no] = 'L3_order'
+                  order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
 
-                  if(float(min_value) < l_ex_value) and (value_v_list[item_no][0] in (3, 4):
-                  add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_st_price]
-                  conditional_market_part(add_order)
-                  order_condition[item_no] = 'conditional_market_order'
-                  order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
+              if(short_qty == 0) and (float(s_order_qty) != 0) and ((invest_usdt * 2) < avail_usdt):
+                if(float(min_value) < s_ex_value) and (value_v_list[item_no][0] == 2):
+                  add_order = [sym_bol, 'Sell', l_s_order_qty, l_s_order_price, 2, l_s_st_price]
+                  order_limit_part(add_order)
                   time.sleep(1)
-                if(float(min_value) < s_ex_value) and (value_v_list[item_no][0] in (3, 4):
-                  add_order = [sym_bol, 'Sell', s_order_qty, 2, s_order_price, 2, s_st_price]
+                  add_order = [sym_bol, 'Sell', m_s_order_qty, 2, m_s_order_price, 2, m_s_st_price]
                   conditional_market_part(add_order)
-                  order_condition[item_no] = 'conditional_market_order'
-                  order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
                   time.sleep(1)
-#-------------------------------------------------------------------------------
-          if(order_type_list == []):
-#-------------------------------------------------------------------------------
-              if(long_qty != 0) and (short_qty == 0) and (invest_usdt < avail_usdt):
-                if(float(s_order_qty) != 0) and (float(min_value) < s_ex_value):
-                  if(value_v_list[item_no][0] in (1, 2):
-                    add_order = [sym_bol, 'Sell', s_order_qty, s_order_price, 2, s_st_price]
-                    order_limit_part(add_order)
-                    order_condition[item_no] = 'L_opened_order_limit_S_order'
-                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
-                    time.sleep(1)
-                  if(value_v_list[item_no][0] in (3, 4):
-                    add_order = [sym_bol, 'Sell', s_order_qty, 2, s_order_price, 2, s_st_price]
-                    conditional_market_part(add_order)
-                    order_condition[item_no] = 'L_opened_conditional_market_S_order'
-                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
-                    time.sleep(1)
-#-------------------------------------------------------------------------------
-              if(long_qty == 0) and (short_qty != 0) and (invest_usdt < avail_usdt):
-                if(float(l_order_qty) != 0) and (float(min_value) < l_ex_value):
-                  if(value_v_list[item_no][0] in (1, 2):
-                    add_order = [sym_bol, 'Buy', l_order_qty, l_order_price, 1, l_st_price]
-                    order_limit_part(add_order)
-                    order_condition[item_no] = 'S_opened_order_limit_L_order'
-                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
-                    time.sleep(1)
-                  if(value_v_list[item_no][0] in (3, 4):
-                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_st_price]
-                    conditional_market_part(add_order)
-                    order_condition[item_no] = 'S_opened_conditional_market_L_order'
-                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
-                    time.sleep(1)
+                  order_condition[item_no] = 'S2_order'
+                  order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
+                if(float(min_value) < s_ex_value) and (value_v_list[item_no][0] == 4):
+                  add_order = [sym_bol, 'Sell', l_s_order_qty, l_s_order_price, 2, l_s_st_price]
+                  order_limit_part(add_order)
+                  time.sleep(1)
+                  add_order = [sym_bol, 'Sell', m_s_order_qty, 2, m_s_order_price, 2, m_s_st_price]
+                  conditional_market_part(add_order)
+                  time.sleep(1)
+                  order_condition[item_no] = 'S4_order'
+                  order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
           ex_act_price = str(float(l_ent_price) + (abs(float(l_ent_price) - float(l_st_loss))))
