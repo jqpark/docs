@@ -1,11 +1,4 @@
-#v5_test14-8-0_MAIN_JQ_250721-1100
-#v5 api
-#problume -> v5_test13-6-5_MAIN_JQ_250714-1700
-#telegram update using nest_asyncio
-#pip install pybit==5.5.0
-#pip install python-telegram-bot --upgrade
-#pip install nest_asyncio
-#v5_test14-8-1_SMA000_250723-1620
+#v5_test14-8-2_SMA000_250807-1800
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #problume -> v5_test13-6-2_JQPARK_250523-1620 - retry code
@@ -28,23 +21,23 @@ from decimal import Decimal
 import os
 
 #MAIN_JQ
-MAIN_JQ = "7889824708:AAGxaMmMwoBqYfK0Uoo6x5yml_xlnNhcHoo"
+#MAIN_JQ = "7889824708:AAGxaMmMwoBqYfK0Uoo6x5yml_xlnNhcHoo"
 #JQPARK
 #JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
 #SMA000
-#SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
+SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
 #SMA020
 #SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
 chat_id = 5372863028
 
 #MAIN_JQ
-session = HTTP(
-    testnet=False,
-    api_key="iPO6ATgyMtjsRIdUqq",
-    api_secret="txYdie99Kn5XSEb0KjsJkOGItf5bRGvgHfkh",
-    max_retries=10,
-    retry_delay=15,
-)
+#session = HTTP(
+#    testnet=False,
+#    api_key="iPO6ATgyMtjsRIdUqq",
+#    api_secret="txYdie99Kn5XSEb0KjsJkOGItf5bRGvgHfkh",
+#    max_retries=10,
+#    retry_delay=15,
+#)
 
 #JQPARK
 #session = HTTP(
@@ -56,13 +49,13 @@ session = HTTP(
 #)
 
 #SMA000
-#session = HTTP(
-#    testnet=False,
-#    api_key="uv9MYvsNlh5f4XSXJU",
-#    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
-#    max_retries=10,
-#    retry_delay=15,
-#)
+session = HTTP(
+    testnet=False,
+    api_key="uv9MYvsNlh5f4XSXJU",
+    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
+    max_retries=10,
+    retry_delay=15,
+)
 
 #SMA020
 #session = HTTP(
@@ -73,7 +66,7 @@ session = HTTP(
 #    retry_delay=15,
 #)
 
-order_id = MAIN_JQ
+order_id = SMA000
 
 wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
 my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
@@ -366,6 +359,10 @@ def order_calc(order_value):
   elif(ready_p < 30) and (lower_per < 30): order_position = 3
   else: order_position = 0
 
+  if(order_position in (1,2)): upp_price, low_price = max_price, max_price - std_diff
+  elif(order_position in (3,4)): upp_price, low_price = min_price - std_diff, min_price
+  else: upp_price, low_price = max_price, min_price
+      
   if(min_diff >= std_diff): step_p = 1
   else: step_p = 0
 
@@ -373,7 +370,7 @@ def order_calc(order_value):
   mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
   mn_time = float(t_list[mn] * 0.001)
   mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
-  s_value_list = [step_p, max_price, min_price, upp_range, low_range]
+  s_value_list = [step_p, upp_price, low_price]
   v_value_list = [order_position, std_price, round(ready_p,2), mx_server_time, mn_server_time]
 #-------------------------------------------------------------------------------
   order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
@@ -724,19 +721,12 @@ while True:
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
         avg_price = (value_s_list[item_no][1] + value_s_list[item_no][2]) * 0.5
-        if(value_v_list[item_no][0] == 1):
-          h_price, l_price = value_s_list[item_no][1], value_v_list[item_no][1]
-          hh_price, ll_price = value_s_list[item_no][1] + limit_diff_p[item_no], value_v_list[item_no][1] - limit_diff_p[item_no]
-        elif(value_v_list[item_no][0] == 2):
-          h_price, l_price = value_v_list[item_no][1], value_s_list[item_no][2]
-          hh_price, ll_price = value_v_list[item_no][1] + limit_diff_p[item_no], value_s_list[item_no][2] - limit_diff_p[item_no]
-        else:
-          h_price, l_price = avg_price, avg_price
-          hh_price, ll_price = avg_price + limit_diff_p[item_no], avg_price - limit_diff_p[item_no]
+        h_price, l_price = value_s_list[item_no][1], value_s_list[item_no][2]
+        hh_price, ll_price = value_s_list[item_no][1] + limit_diff_p[item_no], value_s_list[item_no][2] - limit_diff_p[item_no]
 #-------------------------------------------------------------------------------
 # calc_part_result
 # calc_return = [sym_bol, l_new_lever, s_new_lever]
-        calc_result = calc_part(order_condition[item_no],sym_bol,l_price,h_price,limit_diff_p[item_no])
+        calc_result = calc_part(order_condition[item_no], sym_bol, h_price, l_price, limit_diff_p[item_no])
 #-------------------------------------------------------------------------------
         if(m_get_open == []) and (l_get_open == []) and (long_qty == 0) and (float(calc_result[1]) != float(l_sym_lever)):
           session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=s_sym_lever)
