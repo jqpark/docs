@@ -349,13 +349,13 @@ def order_calc(order_value):
 
   scope_sum = sum(v_list[:std])
   upper_sum, lower_sum = sum(upper_v), sum(lower_v)
-  upper_per = round(upper_sum / scope_sum * 100,2)
-  lower_per = round(lower_sum / scope_sum * 100,2)
-  upp_range = round(upper_sum / (upper_sum + lower_sum) * 100,2)
-  low_range = round(lower_sum / (upper_sum + lower_sum) * 100,2)
+  upper_per = upper_sum / scope_sum * 100
+  lower_per = lower_sum / scope_sum * 100
+#  upp_range = round(upper_sum / (upper_sum + lower_sum) * 100,2)
+#  low_range = round(lower_sum / (upper_sum + lower_sum) * 100,2)
   if(ready_p > 70) and (upper_per > 30): order_position = 2
   elif(ready_p < 30) and (lower_per > 30): order_position = 4
-  elif(ready_p > 70) and (lower_per < 30): order_position = 1
+  elif(ready_p > 70) and (upper_per < 30): order_position = 1
   elif(ready_p < 30) and (lower_per < 30): order_position = 3
   else: order_position = 0
 
@@ -370,7 +370,7 @@ def order_calc(order_value):
   mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
   mn_time = float(t_list[mn] * 0.001)
   mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
-  s_value_list = [step_p, upp_price, low_price]
+  s_value_list = [step_p, upp_price, low_price, round(upper_per,2), round(lower_per,2)]
   v_value_list = [order_position, std_price, round(ready_p,2), mx_server_time, mn_server_time]
 #-------------------------------------------------------------------------------
   order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
@@ -705,7 +705,7 @@ while True:
           if(long_qty != 0):  order_condition[item_no] = 'pre_L_open'
           if(short_qty != 0): order_condition[item_no] = 'pre_S_open'
           if(long_qty != 0) and (short_qty != 0): order_condition[item_no] = 'pre_Both_open'
-          if(long_qty == 0) and (short_qty == 0) and (get_open != []):
+          if(long_qty == 0) and (short_qty == 0) and ((l_get_open != []) or (m_get_open != [])):
             order_condition[item_no] = 'pre_order'
 #-------------------------------------------------------------------------------
 # order_calc
@@ -844,8 +844,8 @@ while True:
 #-------------------------------------------------------------------------------
           if(m_get_open == []) and (l_get_open == []):
 #-------------------------------------------------------------------------------
-              if(long_qty == 0) and (float(l_order_qty) != 0) and ((invest_usdt * 2) < avail_usdt):
-                if(float(min_value) < l_ex_value) and (value_v_list[item_no][0] == 1):
+              if(long_qty == 0) and (float(l_l_order_qty) != 0) and (float(m_l_order_qty) != 0) and ((invest_usdt * 2) < avail_usdt):
+                if(float(min_value) < min(l_l_ex_value, m_l_ex_value)) and (value_v_list[item_no][0] == 1):
                   add_order = [sym_bol, 'Buy', l_l_order_qty, l_l_order_price, 1, l_l_st_price]
                   order_limit_part(add_order)
                   time.sleep(1)
@@ -854,7 +854,7 @@ while True:
                   time.sleep(1)
                   order_condition[item_no] = 'L1_order'
                   order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
-                if(float(min_value) < l_ex_value) and (value_v_list[item_no][0] == 3):
+                if(float(min_value) < min(l_l_ex_value, m_l_ex_value)) and (value_v_list[item_no][0] == 3):
                   add_order = [sym_bol, 'Buy', l_l_order_qty, l_l_order_price, 1, l_l_st_price]
                   order_limit_part(add_order)
                   time.sleep(1)
@@ -864,8 +864,8 @@ while True:
                   order_condition[item_no] = 'L3_order'
                   order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
 
-              if(short_qty == 0) and (float(s_order_qty) != 0) and ((invest_usdt * 2) < avail_usdt):
-                if(float(min_value) < s_ex_value) and (value_v_list[item_no][0] == 2):
+              if(short_qty == 0) and (float(l_s_order_qty) != 0) and (float(m_s_order_qty) != 0) and ((invest_usdt * 2) < avail_usdt):
+                if(float(min_value) < min(l_l_ex_value, m_l_ex_value)) and (value_v_list[item_no][0] == 2):
                   add_order = [sym_bol, 'Sell', l_s_order_qty, l_s_order_price, 2, l_s_st_price]
                   order_limit_part(add_order)
                   time.sleep(1)
@@ -874,7 +874,7 @@ while True:
                   time.sleep(1)
                   order_condition[item_no] = 'S2_order'
                   order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
-                if(float(min_value) < s_ex_value) and (value_v_list[item_no][0] == 4):
+                if(float(min_value) < min(l_l_ex_value, m_l_ex_value)) and (value_v_list[item_no][0] == 4):
                   add_order = [sym_bol, 'Sell', l_s_order_qty, l_s_order_price, 2, l_s_st_price]
                   order_limit_part(add_order)
                   time.sleep(1)
@@ -996,7 +996,7 @@ while True:
           print(sym_bol,sym_price,'order_condition:',pre_condition[item_no], order_condition[item_no],'now_m:',s_unpnl)
         else:
           print(sym_bol,sym_price,pre_condition[item_no],order_condition[item_no], 'PASS')
-        print('lever_ex_value:',calc_result[1], calc_result[2], l_ex_value, s_ex_value, min_value)
+#        print('lever_ex_value:',calc_result[1], calc_result[2], l_ex_value, s_ex_value, min_value)
         print('value_s:',value_s_list[item_no])
         print('value_v:',value_v_list[item_no])
 
