@@ -360,7 +360,7 @@ def order_calc(order_value):
   else: order_position = 0
 
   if(order_position in (1,2)): upp_price, low_price = max_price, max_price - std_diff
-  elif(order_position in (3,4)): upp_price, low_price = min_price - std_diff, min_price
+  elif(order_position in (3,4)): upp_price, low_price = min_price + std_diff, min_price
   else: upp_price, low_price = max_price, min_price
       
   if(min_diff >= std_diff): step_p = 1
