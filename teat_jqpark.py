@@ -273,6 +273,11 @@ def order_calc(order_value):
   max_diff = max_price - min_price
   std_diff = c_list[0] * 0.5 / 5
   maxd_per = round(max_diff / std_diff * 100,2)
+  for lx in range(len(c_list)):
+    if((max(h_list[:lx]) - min(l_list[:lx])) > std_diff):
+      lx = lx - 1
+      nmx_diff = max(h_list[:lx]) - min(l_list[:lx])
+      break
 #-------------------------------------------------------------------------------
 #  if(max_diff < std_diff): limit_diff = max_diff
 #  else:
@@ -285,12 +290,12 @@ def order_calc(order_value):
   v_p_calc, v_m_calc, p_p_calc, p_m_calc = 0, 0, 0, 0
   v_p_add, v_m_add, p_p_add, p_m_add = [], [], [], []
 
-  for mx in range(len(c_list)):
+  for mx in range(len(c_list[:lx])):
     if(h_list[mx] >= max_price): break
-  for mn in range(len(c_list)):
+  for mn in range(len(c_list[:lx])):
     if(l_list[mn] <= min_price): break
 
-  for m in range(len(c_list)):
+  for m in range(len(c_list[:lx])):
     if(h_list[m] == l_list[m]): diff_per = 0
     else: diff_per = (c_list[m] - o_list[m]) / (h_list[m] - l_list[m])
     if(diff_per > 0):
@@ -314,11 +319,11 @@ def order_calc(order_value):
   v_p_per = v_p_sum / (v_p_sum + abs(v_m_sum)) * 100
   p_p_per = p_p_sum / (p_p_sum + abs(p_m_sum)) * 100
   liner_per = (now_price - opn_price) / (max_price - min_price) * 100
-  if(v_sum < 0) and (p_sum < 0): order_position = 1
-  elif(v_sum > 0) and (p_sum > 0): order_position = 2
+  if(v_sum < 0) and (p_sum < 0) and (liner_per > 0): order_position = 1
+  elif(v_sum > 0) and (p_sum > 0) and (liner_per < 0): order_position = 2
   else: order_position = 0
 
-  if(max_diff < std_diff): limit_diff, step_p = max_diff, 1
+  if(nmx_diff <= std_diff): limit_diff, step_p = nmx_diff, 1
   else: limit_diff, step_p = std_diff, 0
 
   mx_time = float(t_list[mx] * 0.001)
