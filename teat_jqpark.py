@@ -286,8 +286,8 @@ def order_calc(order_value):
 #    order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
 #    return(order_return)
 #-------------------------------------------------------------------------------
-  v_p_calc, v_m_calc, p_p_calc, p_m_calc = 0, 0, 0, 0
-  v_p_add, v_m_add, p_p_add, p_m_add = [], [], [], []
+  v_p_calc, v_m_calc, p_p_calc, p_m_calc, l_p_calc, l_m_calc = 0, 0, 0, 0, 0, 0
+  v_p_add, v_m_add, p_p_add, p_m_add, l_p_add, l_m_add = [], [], [], [], [], []
 
   for mx in range(len(c_list[:lx])):
     if(h_list[mx] >= max_price): break
@@ -300,37 +300,45 @@ def order_calc(order_value):
     if(diff_per > 0):
       v_p_calc = v_list[m] * diff_per
       p_p_calc = p_list[m] * diff_per
-      v_m_calc, p_m_calc = 0, 0
+      l_p_calc = c_list[m] - o_list[m]
+      v_m_calc, p_m_calc, l_m_calc = 0, 0, 0
     elif(diff_per < 0):
       v_m_calc = v_list[m] * diff_per
       p_m_calc = p_list[m] * diff_per
-      v_p_calc, p_p_calc = 0, 0
+      l_m_calc = c_list[m] - o_list[m]
+      v_p_calc, p_p_calc, l_p_calc = 0, 0, 0
     else:
       v_p_calc, p_p_calc = 0, 0
       v_m_calc, p_m_calc = 0, 0
+      l_p_calc, l_m_calc = 0, 0
     v_p_add.append(v_p_calc) 
     p_p_add.append(p_p_calc)
     v_m_add.append(v_m_calc) 
     p_m_add.append(p_m_calc)
+    l_p_add.append(l_p_calc)
+    l_m_add.append(l_m_calc)
 
   v_p_sum, p_p_sum, v_m_sum, p_m_sum = sum(v_p_add), sum(p_p_add), sum(v_m_add), sum(p_m_add)
+  l_p_sum, l_m_sum = sum(l_p_add), sum(l_v_add)
+
   v_sum, p_sum = v_p_sum + v_m_sum, p_p_sum + p_m_sum
   v_p_per = v_p_sum / (v_p_sum + abs(v_m_sum)) * 100
   p_p_per = p_p_sum / (p_p_sum + abs(p_m_sum)) * 100
+  v_p_per = l_p_sum / (l_p_sum + abs(l_m_sum)) * 100
   gap_per = (now_price - opn_price) / (max_price - min_price) * 100
   liner_per = (now_price - min_price) / (max_price - min_price) * 100
   if(liner_per > 50) and (mx < mn): order_position = 2
   elif(liner_per < 50) and (mx > mn): order_position = 1
   else: order_position = 0
 
-  if(nmx_diff <= std_diff): limit_diff, step_p = nmx_diff, 1
+  if(nmx_diff <= std_diff): limit_diff, step_p = nmx_diff, 0
   else: limit_diff, step_p = std_diff, 0
 
   mx_time = float(t_list[mx] * 0.001)
   mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
   mn_time = float(t_list[mn] * 0.001)
   mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
-  s_value_list = [step_p, round(liner_per,2), round(v_p_per,2), round(p_p_per,2)]
+  s_value_list = [step_p, round(liner_per,2), round(v_p_per,2), round(p_p_per,2), round(l_p_per,2)]
   v_value_list = [order_position, maxd_per, mx_server_time, mn_server_time]
 #-------------------------------------------------------------------------------
   order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
