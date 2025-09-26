@@ -1,4 +1,4 @@
-#v5_test14-9-1_SMA000_250922-1500
+#v5_test14-9-1_JQPARK_250926-2330
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #problume -> v5_test13-6-2_JQPARK_250523-1620 - retry code
@@ -23,9 +23,9 @@ import os
 #MAIN_JQ
 #MAIN_JQ = "7889824708:AAGxaMmMwoBqYfK0Uoo6x5yml_xlnNhcHoo"
 #JQPARK
-#JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
+JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
 #SMA000
-SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
+#SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
 #SMA020
 #SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
 chat_id = 5372863028
@@ -40,22 +40,22 @@ chat_id = 5372863028
 #)
 
 #JQPARK
-#session = HTTP(
-#    testnet=False,
-#    api_key="LRkVDvSOR7uMQJ8Dsn",
-#    api_secret="lzzvrHvl9naF5YJE04M0H5CyzuYsRie8hh5g",
-#    max_retries=10,
-#    retry_delay=15,
-#)
-
-#SMA000
 session = HTTP(
     testnet=False,
-    api_key="uv9MYvsNlh5f4XSXJU",
-    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
+    api_key="LRkVDvSOR7uMQJ8Dsn",
+    api_secret="lzzvrHvl9naF5YJE04M0H5CyzuYsRie8hh5g",
     max_retries=10,
     retry_delay=15,
 )
+
+#SMA000
+#session = HTTP(
+#    testnet=False,
+#    api_key="uv9MYvsNlh5f4XSXJU",
+#    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
+#    max_retries=10,
+#    retry_delay=15,
+#)
 
 #SMA020
 #session = HTTP(
@@ -66,7 +66,7 @@ session = HTTP(
 #    retry_delay=15,
 #)
 
-order_id = SMA000
+order_id = JQPARK
 
 wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
 my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
