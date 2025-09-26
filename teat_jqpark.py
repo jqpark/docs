@@ -1,4 +1,4 @@
-#v5_test14-9-0_JQPARK_250919-1700
+#v5_test14-9-1_SMA000_250922-1500
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #problume -> v5_test13-6-2_JQPARK_250523-1620 - retry code
@@ -23,9 +23,9 @@ import os
 #MAIN_JQ
 #MAIN_JQ = "7889824708:AAGxaMmMwoBqYfK0Uoo6x5yml_xlnNhcHoo"
 #JQPARK
-JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
+#JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
 #SMA000
-#SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
+SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
 #SMA020
 #SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
 chat_id = 5372863028
@@ -40,22 +40,22 @@ chat_id = 5372863028
 #)
 
 #JQPARK
-session = HTTP(
-    testnet=False,
-    api_key="LRkVDvSOR7uMQJ8Dsn",
-    api_secret="lzzvrHvl9naF5YJE04M0H5CyzuYsRie8hh5g",
-    max_retries=10,
-    retry_delay=15,
-)
-
-#SMA000
 #session = HTTP(
 #    testnet=False,
-#    api_key="uv9MYvsNlh5f4XSXJU",
-#    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
+#    api_key="LRkVDvSOR7uMQJ8Dsn",
+#    api_secret="lzzvrHvl9naF5YJE04M0H5CyzuYsRie8hh5g",
 #    max_retries=10,
 #    retry_delay=15,
 #)
+
+#SMA000
+session = HTTP(
+    testnet=False,
+    api_key="uv9MYvsNlh5f4XSXJU",
+    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
+    max_retries=10,
+    retry_delay=15,
+)
 
 #SMA020
 #session = HTTP(
@@ -66,7 +66,7 @@ session = HTTP(
 #    retry_delay=15,
 #)
 
-order_id = JQPARK
+order_id = SMA000
 
 wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
 my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
@@ -273,11 +273,10 @@ def order_calc(order_value):
   max_diff = max_price - min_price
   std_diff = c_list[0] * 0.5 / 5
   maxd_per = round(max_diff / std_diff * 100,2)
-  for lx in range(len(c_list)):
-    if((max(h_list[:lx]) - min(l_list[:lx])) > std_diff):
-      lx = lx - 1
-      nmx_diff = max(h_list[:lx]) - min(l_list[:lx])
-      break
+  for lx in range(1,len(c_list)+1):
+    if((max(h_list[:lx]) - min(l_list[:lx])) > std_diff): break
+  nmx_diff = max(h_list[:lx]) - min(l_list[:lx])
+#      break
 #-------------------------------------------------------------------------------
 #  if(max_diff < std_diff): limit_diff = max_diff
 #  else:
@@ -318,9 +317,10 @@ def order_calc(order_value):
   v_sum, p_sum = v_p_sum + v_m_sum, p_p_sum + p_m_sum
   v_p_per = v_p_sum / (v_p_sum + abs(v_m_sum)) * 100
   p_p_per = p_p_sum / (p_p_sum + abs(p_m_sum)) * 100
-  liner_per = (now_price - opn_price) / (max_price - min_price) * 100
-  if(v_sum < 0) and (p_sum < 0) and (liner_per > 0): order_position = 1
-  elif(v_sum > 0) and (p_sum > 0) and (liner_per < 0): order_position = 2
+  gap_per = (now_price - opn_price) / (max_price - min_price) * 100
+  liner_per = (now_price - min_price) / (max_price - min_price) * 100
+  if(liner_per > 50) and (mx < mn): order_position = 2
+  elif(liner_per < 50) and (mx > mn): order_position = 1
   else: order_position = 0
 
   if(nmx_diff <= std_diff): limit_diff, step_p = nmx_diff, 1
@@ -687,10 +687,10 @@ while True:
 # calc_return = [sym_bol, l_new_lever, s_new_lever]
         calc_result = calc_part(order_condition[item_no], sym_bol, h_price, l_price, limit_diff_p[item_no])
 #-------------------------------------------------------------------------------
-        if(m_get_open == []) and (l_get_open == []) and (long_qty == 0) and (float(calc_result[1]) != float(l_sym_lever)):
+        if(long_qty == 0) and (float(calc_result[1]) != float(l_sym_lever)):
           session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=s_sym_lever)
           time.sleep(1)
-        if(m_get_open == []) and (l_get_open == []) and (short_qty == 0) and (float(calc_result[2]) != float(s_sym_lever)):
+        if(short_qty == 0) and (float(calc_result[2]) != float(s_sym_lever)):
           session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=l_sym_lever, sellLeverage=calc_result[2])
           time.sleep(1)
 
@@ -704,8 +704,8 @@ while True:
           l_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
           s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
 
-        if((float(calc_result[1]) * 1.1) < float(l_sym_lever)): l_sym_lever == calc_result[1]
-        if((float(calc_result[2]) * 1.1) < float(s_sym_lever)): s_sym_lever == calc_result[2]
+#        if((float(calc_result[1]) * 1.1) < float(l_sym_lever)): l_sym_lever = calc_result[1]
+#        if((float(calc_result[2]) * 1.1) < float(s_sym_lever)): s_sym_lever = calc_result[2]
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
         l_ex_price = str(sym_price + float(tick_size))
@@ -823,12 +823,23 @@ while True:
               order_condition[item_no] = 'S_limit_order_cancel'
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
+        res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
+        time.sleep(1)
+        position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
+        if(position_idx == 1):
+          l_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
+          s_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
+        else:
+          l_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
+          s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #        if(value_s_list[item_no][0] == 1) and (value_v_list[item_no][1] > sym_price > value_v_list[item_no][2]):
         if(value_s_list[item_no][0] != 0) and (value_v_list[item_no][0] != 0):
 #-------------------------------------------------------------------------------
 #          if(m_get_open == []) and (l_get_open == []):
 #-------------------------------------------------------------------------------
-            if(long_qty == 0) and ((invest_usdt * 2) < avail_usdt):
+            if(long_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
                 if(value_v_list[item_no][0] == 1):
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_st_price]                  
@@ -858,7 +869,7 @@ while True:
 #                    order_condition[item_no] = 'L3_limit_order'
 #                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
 
-            if(short_qty == 0) and ((invest_usdt * 2) < avail_usdt):
+            if(short_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
                 if(value_v_list[item_no][0] == 2):
                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_st_price]                  
