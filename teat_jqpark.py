@@ -255,8 +255,8 @@ def order_calc(order_value):
   max_diff = max_price - min_price
   std_diff = c_list[0] * 0.5 / 5
   min_diff = c_list[0] * 0.5 / 10
-  iv_v_list = list(inversed(v_list))
-  iv_p_list = list(inversed(p_list))
+  iv_v_list = list(reversed(v_list))
+  iv_p_list = list(reversed(p_list))
   tot_v_sum, tot_p_sum = sum(v_list), sum(p_list)
   for v in range(len(v_list)):
     if(sum(iv_v_list[:v]) > (tot_v_sum * 0.5)): break
@@ -268,10 +268,11 @@ def order_calc(order_value):
   fr_max_price = max(h_list[:hf_point])
   fr_min_price = min(l_list[:hf_point])
   bk_diff = bk_max_price - bk_min_price
-  mx = [(len(h_list) - hf_point):].index(bk_max_price) + (len(h_list) - hf_point)
-  mn = [(len(l_list) - hf_point):].index(bk_min_price) + (len(l_list) - hf_point)
+  mx = h_list[(len(h_list) - hf_point):].index(bk_max_price) + (len(h_list) - hf_point)
+  mn = l_list[(len(l_list) - hf_point):].index(bk_min_price) + (len(l_list) - hf_point)
   fr_per = round(bk_diff / (fr_max_price - fr_min_price) * 100, 2)
   xn_per = round(bk_diff / max_diff * 100, 2)
+  vl_per = round(sum(iv_v_list[:hf_point]) / tot_v_sum * 100, 2)
 #-------------------------------------------------------------------------------
 #  if(max_diff < std_diff): limit_diff = max_diff
 #  else:
@@ -281,13 +282,13 @@ def order_calc(order_value):
 #    order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
 #    return(order_return)
 #-------------------------------------------------------------------------------
-  if(bk_max_price > c_list[0]) and (bk_min_price < c_list[0]): order_position = 11
+  if(bk_max_price > c_list[0]) and (bk_min_price < c_list[0]): order_position = 1
   else: order_position = 0
   if(v_value_list != 0) and (bk_diff != v_value_list[1]): order_position = 0
      
   if(bk_diff < min_diff): limit_diff, step_p = std_diff, 0
-  elif(bk_diff > std_diff): limit_diff, step_p = std_diff, 21
-  else: limit_diff, step_p = bk_diff, 11
+  elif(bk_diff > std_diff): limit_diff, step_p = std_diff, 2
+  else: limit_diff, step_p = bk_diff, 1
 
   mx_time = float(t_list[mx] * 0.001)
   mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
@@ -295,7 +296,7 @@ def order_calc(order_value):
   mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
   hf_time = float(t_list[(len(c_list) - hf_point)] * 0.001)
   hf_server_time = str(datetime.utcfromtimestamp(hf_time) + timedelta(hours=9))
-  s_value_list = [step_p, bk_max_price, bk_min_price, fr_per, xn_per]
+  s_value_list = [step_p, bk_max_price, bk_min_price, fr_per, xn_per, vl_per]
   v_value_list = [order_position, bk_diff, mx_server_time, mn_server_time, hf_server_time]
 #-------------------------------------------------------------------------------
   order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
