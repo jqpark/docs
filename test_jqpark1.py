@@ -1,4 +1,4 @@
-#v5_test14-9-5_JQPARK_251020-1000
+#v5_test14-9-5_SMA020_251021-1630
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #problume -> v5_test14-9-4_JQPARK_251014-1730 -> v5_test13-6-2_JQPARK_250523-1620 - retry code
@@ -23,11 +23,11 @@ import os
 #MAIN_JQ
 #MAIN_JQ = "7889824708:AAGxaMmMwoBqYfK0Uoo6x5yml_xlnNhcHoo"
 #JQPARK
-JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
+#JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
 #SMA000
 #SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
 #SMA020
-#SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
+SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
 chat_id = 5372863028
 
 #MAIN_JQ
@@ -40,13 +40,13 @@ chat_id = 5372863028
 #)
 
 #JQPARK
-session = HTTP(
-    testnet=False,
-    api_key="LRkVDvSOR7uMQJ8Dsn",
-    api_secret="lzzvrHvl9naF5YJE04M0H5CyzuYsRie8hh5g",
-    max_retries=10,
-    retry_delay=15,
-)
+#session = HTTP(
+#    testnet=False,
+#    api_key="LRkVDvSOR7uMQJ8Dsn",
+#    api_secret="lzzvrHvl9naF5YJE04M0H5CyzuYsRie8hh5g",
+#    max_retries=10,
+#    retry_delay=15,
+#)
 
 #SMA000
 #session = HTTP(
@@ -58,15 +58,15 @@ session = HTTP(
 #)
 
 #SMA020
-#session = HTTP(
-#    testnet=False,
-#    api_key="EE0YCNPEGaVVfDvsCh",
-#    api_secret="SlmtbkKMfFrZumag5ceTXRYA4wWZS55pc2eZ",
-#    max_retries=10,
-#    retry_delay=15,
-#)
+session = HTTP(
+    testnet=False,
+    api_key="EE0YCNPEGaVVfDvsCh",
+    api_secret="SlmtbkKMfFrZumag5ceTXRYA4wWZS55pc2eZ",
+    max_retries=10,
+    retry_delay=15,
+)
 
-order_id = JQPARK
+order_id = SMA020
 
 wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
 my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
@@ -674,7 +674,7 @@ while True:
         s_order_position = 2
         s_ex_value = float(s_order_qty) * float(s_order_price) * 0.8
 
-        if(value_v_list[item_no][0] in (3, 5)):
+        if(value_v_list[item_no][0] in (5, 7)):
             m_l_ex_price = str(h_price + float(tick_size))
             m_l_order_price = str(int(Decimal(m_l_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
             m_l_ex_qty = str((invest_usdt * float(l_sym_lever)) / float(m_l_order_price))
@@ -698,7 +698,7 @@ while True:
             m_s_order_price, m_s_order_qty, m_s_st_price, m_s_ex_value = 0, 0, 0, 0
             l_s_order_price, l_s_order_qty, l_s_st_price, l_s_ex_value = 0, 0, 0, 0
 
-        elif(value_v_list[item_no][0] in (4, 6)):
+        elif(value_v_list[item_no][0] in (6, 8)):
             l_s_ex_price = str(h_price + float(tick_size))
             l_s_order_price = str(int(Decimal(l_s_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
             l_s_ex_qty = str((invest_usdt * float(s_sym_lever)) / float(l_s_order_price))
@@ -818,6 +818,7 @@ while True:
                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_st_price]                  
                     conditional_market_part(add_order)
                     order_condition[item_no] = 'conditional_market_order'
+                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]  
                     time.sleep(1)
 
             if(short_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
@@ -826,6 +827,7 @@ while True:
                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_order_price, 2, s_st_price]                  
                     conditional_market_part(add_order)
                     order_condition[item_no] = 'conditional_market_order'
+                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]  
                     time.sleep(1)
                       
           if(value_s_list[item_no][1] < sym_price):
@@ -835,6 +837,7 @@ while True:
                     add_order = [sym_bol, 'Buy', l_order_qty, l_order_price, 1, l_st_price]
                     order_limit_part(add_order)
                     order_condition[item_no] = 'Limit_L_order'
+                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]  
                     time.sleep(1)
 
           if(value_s_list[item_no][2] > sym_price):
@@ -844,6 +847,7 @@ while True:
                     add_order = [sym_bol, 'Sell', s_order_qty, s_order_price, 2, s_st_price]                  
                     order_limit_part(add_order)
                     order_condition[item_no] = 'Limit_S_order'
+                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]  
                     time.sleep(1)
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
