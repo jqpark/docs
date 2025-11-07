@@ -1,4 +1,4 @@
-#v5_test14-9-2_SMA000_250930-1030
+#v5_test14-10-4_SMA020_251107-1600
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #problume -> v5_test13-6-2_JQPARK_250523-1620 - retry code
@@ -25,9 +25,9 @@ import os
 #JQPARK
 #JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
 #SMA000
-SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
+#SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
 #SMA020
-#SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
+SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
 chat_id = 5372863028
 
 #MAIN_JQ
@@ -49,24 +49,24 @@ chat_id = 5372863028
 #)
 
 #SMA000
-session = HTTP(
-    testnet=False,
-    api_key="uv9MYvsNlh5f4XSXJU",
-    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
-    max_retries=10,
-    retry_delay=15,
-)
-
-#SMA020
 #session = HTTP(
 #    testnet=False,
-#    api_key="EE0YCNPEGaVVfDvsCh",
-#    api_secret="SlmtbkKMfFrZumag5ceTXRYA4wWZS55pc2eZ",
+#    api_key="uv9MYvsNlh5f4XSXJU",
+#    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
 #    max_retries=10,
 #    retry_delay=15,
 #)
 
-order_id = SMA000
+#SMA020
+session = HTTP(
+    testnet=False,
+    api_key="EE0YCNPEGaVVfDvsCh",
+    api_secret="SlmtbkKMfFrZumag5ceTXRYA4wWZS55pc2eZ",
+    max_retries=10,
+    retry_delay=15,
+)
+
+order_id = SMA020
 
 wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
 my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
@@ -310,8 +310,8 @@ def order_calc(order_value):
   l_p_per = l_p_sum / (l_p_sum + abs(l_m_sum)) * 100
   gap_per = (now_price - opn_price) / (max_price - min_price) * 100
   liner_per = (now_price - min_price) / (max_price - min_price) * 100
-  if(l_p_per > v_p_per) and (l_p_per > p_p_per): order_position = 2
-  elif(l_p_per < v_p_per) and (l_p_per < p_p_per): order_position = 1
+  if(min(l_p_per, v_p_per, p_p_per) > 50): order_position = 1
+  elif(max(l_p_per, v_p_per, p_p_per) < 50): order_position = 2
   else: order_position = 0
 
   if(nmx_diff <= std_diff): limit_diff, step_p = nmx_diff, 1
@@ -397,7 +397,14 @@ try_item = []
 for i in range(len(rest_item)):
   if(rest_item[i] in try_item): pass
   else: try_item.append(rest_item[i])
-rest_item = try_item.copy()
+
+item_list1 = session.get_positions(category="linear",settleCoin="USDT")['result']['list']
+if(item_list1 == []): rest_item1 = []
+else: rest_item1 = pd.DataFrame(item_list1)['symbol']
+for i in range(len(rest_item1)):
+  if(rest_item1[i] in try_item): pass
+  else: try_item.append(rest_item1[i])
+#rest_item = try_item.copy()
 #-------------------------------------------------------------------------------
 first_time = int(time.time())
 #-------------------------------------------------------------------------------
@@ -451,7 +458,7 @@ while i < len(try_item):
   i = i + 1
 #-------------------------------------------------------------------------------
 i = 0
-while i < len(rest_item):
+while i < len(try_item):
   keep_item[i] = 1
   i = i + 1
 #-------------------------------------------------------------------------------
@@ -818,7 +825,7 @@ while True:
             closed_order_part(add_order)
             time.sleep(1)
             order_condition[item_no] = 'PF_L_closed'
-            order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
+            order_info[item_no] = [order_condition[item_no], value_s_list[item_no], value_v_list[item_no]]
 #            opened_order_info = [sym_bol, l_unpnl, order_condition[item_no], order_info[item_no]]
 #            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
 #            requests.get(url).json() # this sends the message
@@ -828,7 +835,7 @@ while True:
             closed_order_part(add_order)
             time.sleep(1)
             order_condition[item_no] = 'PF_S_closed'
-            order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
+            order_info[item_no] = [order_condition[item_no], value_s_list[item_no], value_v_list[item_no]]
 #            opened_order_info = [sym_bol, s_unpnl, order_condition[item_no], order_info[item_no]]
 #            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
 #            requests.get(url).json() # this sends the message
@@ -917,7 +924,7 @@ while True:
 #                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
-          ex_act_price = str(float(l_ent_price) + (abs(float(l_ent_price) - float(l_st_loss))))
+          ex_act_price = str(float(l_ent_price) + ((abs(float(l_ent_price) - float(l_st_loss))) * 1.5))
           act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
           if(float(l_trailing) == 0):
             ex_ts_diff = abs(float(l_ent_price) - float(l_st_loss))
@@ -939,7 +946,7 @@ while True:
 #              time.sleep(1)
 #-------------------------------------------------------------------------------
         if(short_qty != 0):
-          ex_act_price = str(float(s_ent_price) - (abs(float(s_ent_price) - float(s_st_loss))))
+          ex_act_price = str(float(s_ent_price) - ((abs(float(s_ent_price) - float(s_st_loss))) * 1.5))
           act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
           if(float(s_trailing) == 0):
             ex_ts_diff = abs(float(s_ent_price) - float(s_st_loss))
