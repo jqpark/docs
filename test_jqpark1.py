@@ -1,4 +1,4 @@
-#v5_test14-10-6_SMA000_251119-1530
+#v5_test14-10-7_SMA000_251121-1800
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #problume -> v5_test14-9-4_JQPARK_251014-1730 -> v5_test13-6-2_JQPARK_250523-1620 - retry code
@@ -261,7 +261,7 @@ def order_calc(order_value):
   for lx in range(1,len(c_list)+1):
     if((max(h_list[:lx]) - min(l_list[:lx])) > std_diff): break
   nmx_diff = max(h_list[:lx]) - min(l_list[:lx])
-#      break
+  limit_diff = nmx_diff
 #-------------------------------------------------------------------------------
 #  if(max_diff < std_diff): limit_diff = max_diff
 #  else:
@@ -312,12 +312,13 @@ def order_calc(order_value):
   l_p_per = l_p_sum / (l_p_sum + abs(l_m_sum)) * 100
   gap_per = (now_price - opn_price) / (max_price - min_price) * 100
   liner_per = (now_price - min_price) / (max_price - min_price) * 100
-  if(min(l_p_per, v_p_per, p_p_per) > 50): order_position = 11
-  elif(max(l_p_per, v_p_per, p_p_per) < 50): order_position = 21
-  else: order_position = 0
+  if(min(l_p_per, v_p_per, p_p_per) > 50): order_position = 1
+  elif(max(l_p_per, v_p_per, p_p_per) < 50): order_position = 2
+  else: order_position = 9
 
-  #if(nmx_diff <= std_diff): limit_diff, step_p = nmx_diff, 11
-  limit_diff, step_p = nmx_diff, 11
+  #if(nmx_diff <= std_diff): limit_diff, step_p = nmx_diff, 1
+  if(v_value_list != 0):
+    if(v_value_list[0] != order_position) and (order_position in (1, 2)): step_p = 1    
   if(nmx_diff < min_diff): limit_diff, step_p = std_diff, 0    
 
   mx_time = float(t_list[mx] * 0.001)
@@ -697,12 +698,16 @@ while True:
 # calc_return = [sym_bol, l_new_lever, s_new_lever]
         calc_result = calc_part(order_condition[item_no], sym_bol, h_price, l_price, limit_diff_p[item_no])
 #-------------------------------------------------------------------------------
-        if(long_qty == 0) and (float(calc_result[1]) != float(l_sym_lever)):
-          session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=s_sym_lever)
-          time.sleep(1)
-        if(short_qty == 0) and (float(calc_result[2]) != float(s_sym_lever)):
-          session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=l_sym_lever, sellLeverage=calc_result[2])
-          time.sleep(1)
+        if(long_qty == 0) and (short_qty == 0):
+            if(float(calc_result[1]) != float(l_sym_lever)) or (float(calc_result[2]) != float(s_sym_lever)):
+              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=calc_result[2])
+              time.sleep(1)
+        if(long_qty == 0) and (short_qty != 0) and (float(calc_result[1]) != float(l_sym_lever)):
+              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=s_sym_lever)
+              time.sleep(1)
+        if(long_qty != 0) and (short_qty == 0) and (float(calc_result[2]) != float(s_sym_lever)):
+              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=l_sym_lever, sellLeverage=calc_result[2])
+              time.sleep(1)
 
         res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
         time.sleep(1)
