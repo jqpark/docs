@@ -115,7 +115,7 @@ def order_limit_part(add_order):
 #               triggerPrice=add_order[2],
                timeInForce="GTC",
                positionIdx=add_order[4],        #hedge-mode Buy side
-               takeProfit=calc_result[5],
+               takeProfit=add_order[5],
                stopLoss=add_order[6],
                reduceOnly=False,
                closeOnTrigger=False,
@@ -136,7 +136,7 @@ def conditional_market_part(add_order):
                triggerPrice=add_order[4],
                timeInForce="GTC",
                positionIdx=add_order[5],        #hedge-mode Buy side
-               takeProfit=calc_result[6],
+               takeProfit=add_order[6],
                stopLoss=add_order[7],
                reduceOnly=False,
                closeOnTrigger=False,
@@ -874,7 +874,7 @@ while True:
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
 #                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price]                  
 #                    order_market_part(add_order)
-                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_st_price]                  
+                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_tp_price, l_st_price]                  
                     conditional_market_part(add_order)
                     time.sleep(1)
 #                    order_condition[item_no] = 'L_market_order'
