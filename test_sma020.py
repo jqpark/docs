@@ -115,7 +115,7 @@ def order_limit_part(add_order):
 #               triggerPrice=add_order[2],
                timeInForce="GTC",
                positionIdx=add_order[4],        #hedge-mode Buy side
-               takeProfit=calc_result[5],
+               takeProfit=add_order[5],
                stopLoss=add_order[6],
                reduceOnly=False,
                closeOnTrigger=False,
@@ -136,7 +136,7 @@ def conditional_market_part(add_order):
                triggerPrice=add_order[4],
                timeInForce="GTC",
                positionIdx=add_order[5],        #hedge-mode Buy side
-               takeProfit=calc_result[6],
+               takeProfit=add_order[6],
                stopLoss=add_order[7],
                reduceOnly=False,
                closeOnTrigger=False,
