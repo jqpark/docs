@@ -1,4 +1,4 @@
-#v5_test14-10-7_SMA020_251124-1630
+#v5_test14-10-8_SMA020_251125-1700
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #problume -> v5_test14-9-4_JQPARK_251014-1730 -> v5_test13-6-2_JQPARK_250523-1620 - retry code
@@ -81,7 +81,7 @@ session = HTTP(
 invest_usdt = 2
 delay_time = 60 #time_itv*60
 check_time = 0
-return_time = 100
+return_time = 1
 ###############################################################################
 ##############################################################################
 def order_market_part(add_order):
@@ -318,8 +318,9 @@ def order_calc(order_value):
   elif(max(l_p_per, v_p_per, p_p_per) < 50): order_position = 2
   else: order_position = 9
 
-  if(v_value_list != 0):
-    if(v_value_list[0] != order_position) and (order_position in (1, 2)): step_p = 1    
+  if(order_position in (1, 2)): step_p = 1    
+#  if(v_value_list != 0):
+#    if(v_value_list[0] != order_position) and (order_position in (1, 2)): step_p = 1    
   if(nmx_diff < min_diff): limit_diff, step_p = std_diff, 0
         
   mx_time = float(t_list[mx] * 0.001)
@@ -395,25 +396,44 @@ def calc_part(order_condition, sym_bol, h_price, l_price, lever_diff):
 ###############################################################################
 ###############################################################################
 # make rest_item list
-while True:
-  wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
-  my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
-  live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
-  tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
-  avail_usdt = my_usdt - tot_position
+wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
+my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
+live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
+tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
+avail_usdt = my_usdt - tot_position
 
-  max_l_usdt, min_l_usdt, origin_usdt = live_usdt, live_usdt, my_usdt
-  max_m_usdt, min_m_usdt = my_usdt, my_usdt
-  max_t_position = tot_position
+max_l_usdt, min_l_usdt, origin_usdt = live_usdt, live_usdt, my_usdt
+max_m_usdt, min_m_usdt = my_usdt, my_usdt
+max_t_position = tot_position
+
+btc_info=session.get_tickers(category="linear",symbol='BTCUSDT')['result']['list']
+btc_price = float(pd.DataFrame(btc_info)['lastPrice'][0])
+url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'order_id_Equity = ',round(live_usdt,2), 'My Wallet = ', round(my_usdt,2),'BTCUSDT = ',btc_price}"
+#  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'Test-JQ_BTCUSDT = ',btc_price}"
+requests.get(url).json() # this sends the message  max_usdt = live_usdt
+#url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'new_item_list:',try_item}"
+#requests.get(url).json() # this sends the message
+#-------------------------------------------------------------------------------
+while True:
+#  wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
+#  my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
+#  live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
+#  tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
+#  avail_usdt = my_usdt - tot_position
+
+#  max_l_usdt, min_l_usdt, origin_usdt = live_usdt, live_usdt, my_usdt
+#  max_m_usdt, min_m_usdt = my_usdt, my_usdt
+#  max_t_position = tot_position
 
   try_item = []  
   ts_list = []  
   get_position=session.get_positions(category="linear",settleCoin="USDT")['result']['list']
-  ts_item = pd.DataFrame(get_position)['symbol']
-  for ts in ts_item:
-    ts_type=session.get_open_orders(category="linear",symbol=ts)['result']['list']
-    trailing_symbols = [o["symbol"] for o in ts_type if o.get("stopOrderType") == "TrailingStop"]
-    if(trailing_symbols != []): ts_list.append(ts)
+  if(get_position != []):  
+    ts_item = pd.DataFrame(get_position)['symbol']
+    for ts in ts_item:
+      ts_type=session.get_open_orders(category="linear",symbol=ts)['result']['list']
+      trailing_symbols = [o["symbol"] for o in ts_type if o.get("stopOrderType") == "TrailingStop"]
+      if(trailing_symbols != []): ts_list.append(ts)
     
     
 #  item_list = session.get_open_orders(category="linear",settleCoin="USDT")['result']['list']
@@ -441,12 +461,14 @@ while True:
   if(wish_item_no > len(try_item)):
     tickers = session.get_tickers(category="linear")['result']['list']
     symbol_list = (pd.DataFrame(tickers)['symbol'])
-    turnover_list = (pd.DataFrame(tickers)['turnover24h']).astype(float)
+#    turnover_list = (pd.DataFrame(tickers)['turnover24h']).astype(float)
     price_list = (pd.DataFrame(tickers)['lastPrice']).astype(float)
     diff_list = (pd.DataFrame(tickers)['price24hPcnt']).astype(float)  
-    values = pd.concat([symbol_list,turnover_list,price_list,diff_list],axis=1)
+#    values = pd.concat([symbol_list,turnover_list,price_list,diff_list],axis=1)
+    values = pd.concat([symbol_list,price_list,diff_list],axis=1)
     sort_list = values.sort_values('price24hPcnt',key=lambda x: x.abs(),ignore_index=True,ascending=False)
-    added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e+07)]
+#    added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e+07)]
+    added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2))]
     added_symbols = added_list["symbol"].tolist()
 
     added_symbols = [x for x in added_symbols if x not in ts_list]
@@ -478,22 +500,22 @@ while True:
     keep_item[i] = 1
     i = i + 1
 #-------------------------------------------------------------------------------
-  btc_info=session.get_tickers(category="linear",symbol='BTCUSDT')['result']['list']
-  btc_price = float(pd.DataFrame(btc_info)['lastPrice'][0])
-  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'order_id_Equity = ',round(live_usdt,2), 'My Wallet = ', round(my_usdt,2),'BTCUSDT = ',btc_price}"
-#  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'Test-JQ_BTCUSDT = ',btc_price}"
-  requests.get(url).json() # this sends the message  max_usdt = live_usdt
-  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'new_item_list:',try_item}"
-  requests.get(url).json() # this sends the message
+#  btc_info=session.get_tickers(category="linear",symbol='BTCUSDT')['result']['list']
+#  btc_price = float(pd.DataFrame(btc_info)['lastPrice'][0])
+#  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'order_id_Equity = ',round(live_usdt,2), 'My Wallet = ', round(my_usdt,2),'BTCUSDT = ',btc_price}"
+##  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'Test-JQ_BTCUSDT = ',btc_price}"
+#  requests.get(url).json() # this sends the message  max_usdt = live_usdt
+#  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'new_item_list:',try_item}"
+#  requests.get(url).json() # this sends the message
 ###############################################################################
   while True:
 #-------------------------------------------------------------------------------
-    wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
-    time.sleep(1)
-    my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
-    live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
-    tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
-    avail_usdt = my_usdt - tot_position
+#    wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
+#    time.sleep(1)
+#    my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
+#    live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
+#    tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
+#    avail_usdt = my_usdt - tot_position
 
     if(max_l_usdt <= live_usdt): max_l_usdt = live_usdt
     if(min_l_usdt >= live_usdt): min_l_usdt = live_usdt
@@ -845,7 +867,7 @@ while True:
               order_condition[item_no] = 'S_limit_order_cancel'
 #-------------------------------------------------------------------------------
 ###############################################################################
-        if(long_qty != 0) and (float(l_unpnl) >= (invest_usdt * 0.1)) and (value_v_list[item_no][0] == 2):  
+        if(long_qty != 0) and (float(l_unpnl) >= (invest_usdt * 0.1)) and (value_v_list[item_no][0] == 2) and (ts_state != 0):  
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
@@ -855,7 +877,7 @@ while True:
 #            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
 #            requests.get(url).json() # this sends the message
             
-        if(short_qty != 0) and (float(s_unpnl) >= (invest_usdt * 0.1)) and (value_v_list[item_no][0] == 1):  
+        if(short_qty != 0) and (float(s_unpnl) >= (invest_usdt * 0.1)) and (value_v_list[item_no][0] == 1) and (ts_state != 0):  
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
@@ -891,8 +913,8 @@ while True:
                     order_condition[item_no] = 'L_market_order'
                     order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
                     opened_order_info = [sym_bol, order_condition[item_no], order_info[item_no]]
-                    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-                    requests.get(url).json() # this sends the message
+#                    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
+#                    requests.get(url).json() # this sends the message
                       
 #                  if(float(min_value) < l_l_ex_value) and (l_order_idx[1] == 0) and (float(l_l_order_qty) != 0):
 #                    add_order = [sym_bol, 'Buy', l_l_order_qty, l_l_order_price, 1, l_l_st_price]
@@ -924,8 +946,8 @@ while True:
                     order_condition[item_no] = 'S_market_order'
                     order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
                     opened_order_info = [sym_bol, order_condition[item_no], order_info[item_no]]
-                    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-                    requests.get(url).json() # this sends the message
+#                    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
+#                    requests.get(url).json() # this sends the message
                     
 #                  if(float(min_value) < l_s_ex_value) and (l_order_idx[2] == 0) and (float(l_s_order_qty) != 0):
 #                    add_order = [sym_bol, 'Sell', l_s_order_qty, l_s_order_price, 2, l_s_st_price]
@@ -1093,8 +1115,8 @@ while True:
       run_time = int(time.time())
       one_cycle = round((run_time - first_time) / (60 * 60),1)
       first_time = int(time.time())
-      url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'one_cycle(hr):',one_cycle}"
-      requests.get(url).json() # this sends the message
+#      url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'one_cycle(hr):',one_cycle}"
+#      requests.get(url).json() # this sends the message
       check_time = 0
       break
 ###############################################################################
