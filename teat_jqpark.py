@@ -1,4 +1,4 @@
-#v5_test14-10-6_JQPARK_2511120-1430
+#v5_test14-10-7_JQPARK_2511120-1430
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #problume -> v5_test14-9-4_JQPARK_251014-1730 -> v5_test13-6-2_JQPARK_250523-1620 - retry code
@@ -20,54 +20,53 @@ import numpy
 from decimal import Decimal
 import os
 
-#MAIN_JQ
-#MAIN_JQ = "7889824708:AAGxaMmMwoBqYfK0Uoo6x5yml_xlnNhcHoo"
-#JQPARK
+MAIN_JQ = "7889824708:AAGxaMmMwoBqYfK0Uoo6x5yml_xlnNhcHoo"
 JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
-#SMA000
-#SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
-#SMA020
-#SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
+SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
+SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
 chat_id = 5372863028
 
 order_id = JQPARK
 
 #MAIN_JQ
-#session = HTTP(
-#    testnet=False,
-#    api_key="iPO6ATgyMtjsRIdUqq",
-#    api_secret="txYdie99Kn5XSEb0KjsJkOGItf5bRGvgHfkh",
-#    max_retries=10,
-#    retry_delay=15,
-#)
+if(order_id == MAIN_JQ):
+  session = HTTP(
+    testnet=False,
+    api_key="iPO6ATgyMtjsRIdUqq",
+    api_secret="txYdie99Kn5XSEb0KjsJkOGItf5bRGvgHfkh",
+    max_retries=10,
+    retry_delay=15,
+  )
 
 #JQPARK
-session = HTTP(
+if(order_id == JQPARK):
+  session = HTTP(
     testnet=False,
     api_key="LRkVDvSOR7uMQJ8Dsn",
     api_secret="lzzvrHvl9naF5YJE04M0H5CyzuYsRie8hh5g",
     max_retries=10,
     retry_delay=15,
-)
+  )
 
 #SMA000
-#session = HTTP(
-#    testnet=False,
-#    api_key="uv9MYvsNlh5f4XSXJU",
-#    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
-#    max_retries=10,
-#    retry_delay=15,
-#)
+if(order_id == SMA000):
+  session = HTTP(
+    testnet=False,
+    api_key="uv9MYvsNlh5f4XSXJU",
+    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
+    max_retries=10,
+    retry_delay=15,
+  )
 
 #SMA020
-#session = HTTP(
-#    testnet=False,
-#    api_key="EE0YCNPEGaVVfDvsCh",
-#    api_secret="SlmtbkKMfFrZumag5ceTXRYA4wWZS55pc2eZ",
-#    max_retries=10,
-#    retry_delay=15,
-#)
-
+if(order_id == SMA020):
+  session = HTTP(
+    testnet=False,
+    api_key="EE0YCNPEGaVVfDvsCh",
+    api_secret="SlmtbkKMfFrZumag5ceTXRYA4wWZS55pc2eZ",
+    max_retries=10,
+    retry_delay=15,
+  )
 #wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
 #my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
 #live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
@@ -340,7 +339,7 @@ def calc_part(order_condition, sym_bol, h_price, l_price, lever_diff):
         liq_l_limit = lever_point - abs((h_price - lever_point) * 0.1)
         liq_l_max = lever_point - abs((h_price - lever_point) * 0.1)
         max_l_perc = abs(h_price - (h_price * 0.5 / pl))
-        if ((liq_l_p < liq_l_limit) and (max_l_perc < lever_point) and (pl <= float(max_lever))):
+        if ((liq_l_p < liq_l_limit) and (max_l_perc < lever_point) and (pl < float(max_lever))):
             pl = pl + float(lever_step)
         else:
 #            el_new_lever = str(pl - float(lever_step))
@@ -360,7 +359,7 @@ def calc_part(order_condition, sym_bol, h_price, l_price, lever_diff):
         liq_s_max = lever_point + abs((l_price - lever_point) * 0.1)
         max_s_perc = abs(l_price + (l_price * 0.5 / ps))
 
-        if ((liq_s_p > liq_s_limit) and (max_s_perc > lever_point) and (ps <= float(max_lever))):
+        if ((liq_s_p > liq_s_limit) and (max_s_perc > lever_point) and (ps < float(max_lever))):
             ps = ps + float(lever_step)
         else:
 #            es_new_lever = str(ps - float(lever_step))
@@ -567,7 +566,8 @@ while True:
       max_lever = pd.DataFrame(instruments_info)['leverageFilter'][0]['maxLeverage']
       min_lever = pd.DataFrame(instruments_info)['leverageFilter'][0]['minLeverage']
       lever_step = pd.DataFrame(instruments_info)['leverageFilter'][0]['leverageStep']
-
+      status = instruments_info[0]['status']
+        
       wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
       time.sleep(1)
       my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
@@ -650,7 +650,7 @@ while True:
       closed_order[item_no] = now_order_state
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-      if(sum(keep_item) >= ordered_item) and (keep_item[item_no] == 0):
+      if((sum(keep_item) >= ordered_item) and (keep_item[item_no] == 0)) or (status != 'Trading'):
         if(m_get_open != []):
           session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
         if(l_get_open != []):
@@ -689,14 +689,15 @@ while True:
 # calc_return = [sym_bol, l_new_lever, s_new_lever]
         calc_result = calc_part(order_condition[item_no], sym_bol, h_price, l_price, limit_diff_p[item_no])
 #-------------------------------------------------------------------------------
-        if(long_qty == 0) and (short_qty == 0):
+        if(float(max_lever) >= max(float(calc_result[1]), float(calc_result[2]))):  
+          if(long_qty == 0) and (short_qty == 0):
             if(float(calc_result[1]) != float(l_sym_lever)) or (float(calc_result[2]) != float(s_sym_lever)):
               session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=calc_result[2])
               time.sleep(1)
-        if(long_qty == 0) and (short_qty != 0) and (float(calc_result[1]) != float(l_sym_lever)):
+          if(long_qty == 0) and (short_qty != 0) and (float(calc_result[1]) != float(l_sym_lever)):
               session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=s_sym_lever)
               time.sleep(1)
-        if(long_qty != 0) and (short_qty == 0) and (float(calc_result[2]) != float(s_sym_lever)):
+          if(long_qty != 0) and (short_qty == 0) and (float(calc_result[2]) != float(s_sym_lever)):
               session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=l_sym_lever, sellLeverage=calc_result[2])
               time.sleep(1)
 
@@ -870,7 +871,7 @@ while True:
 #          if(m_get_open == []) and (l_get_open == []):
 #-------------------------------------------------------------------------------
             if(long_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
-                if(value_v_list[item_no][0] == 1) and (m_order_idx[1] == 0):
+                if(value_v_list[item_no][0] == 1) and (m_order_idx[1] == 0) and (float(max_lever) >= float(l_sym_lever)):
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
 #                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price]                  
 #                    order_market_part(add_order)
@@ -905,7 +906,7 @@ while True:
 #                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
 
             if(short_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
-                if(value_v_list[item_no][0] == 1) and (m_order_idx[2] == 0):
+                if(value_v_list[item_no][0] == 1) and (m_order_idx[2] == 0) and (float(s_sym_lever) == float(calc_result[2])):
                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_order_price, 2, s_tp_price, s_st_price]                  
                     conditional_market_part(add_order)
@@ -949,9 +950,9 @@ while True:
 
             time.sleep(1)
             opened_order_info = [sym_bol, round(float(l_position_im),1), order_condition[item_no], order_info[item_no]]
-            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-            requests.get(url).json() # this sends the message
-#
+#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
+#            requests.get(url).json() # this sends the message
+
 #            if(l_order_idx[1] == 1):
 #              session.cancel_all_orders(category="linear", symbol=sym_bol, orderFilter='Order')
 #              time.sleep(1)
@@ -971,9 +972,9 @@ while True:
 
             time.sleep(1)
             opened_order_info = [sym_bol, round(float(s_position_im),1), order_condition[item_no], order_info[item_no]]
-            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-            requests.get(url).json() # this sends the message
-#
+#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
+#            requests.get(url).json() # this sends the message
+
 #            if(l_order_idx[2] == 2):
 #              session.cancel_all_orders(category="linear", symbol=sym_bol, orderFilter='Order')
 #              time.sleep(1)
