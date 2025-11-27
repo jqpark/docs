@@ -385,13 +385,12 @@ while True:
 #    for i in range(len(rest_item)):
 #      if(rest_item[i] in try_item): pass
 #      else: try_item.append(rest_item[i])
-      
-#    item_list1 = session.get_positions(category="linear",settleCoin="USDT")['result']['list']
-#    if(item_list1 == []): rest_item1 = []
-#    else: rest_item1 = pd.DataFrame(item_list1)['symbol']
-#    for i in range(len(rest_item1)):
-#      if(rest_item1[i] in try_item): pass
-#      else: try_item.append(rest_item1[i])
+
+  get_positions = session.get_positions(category="linear",settleCoin="USDT")['result']['list']
+  if(get_positions == []): get_item, get_list = [], []
+  else: 
+    get_item = pd.DataFrame(get_positions)['symbol']
+    get_list = get_item.tolist()
 #rest_item = try_item.copy()
 #-------------------------------------------------------------------------------
   first_time = int(time.time())
@@ -409,22 +408,15 @@ while True:
     sort_list = values.sort_values('turnover24h',ignore_index=True,ascending=False)
 #  added_list = sort_list[(sort_list['lastPrice'] > 0.01) & (sort_list['lastPrice'] < 2) & (sort_list['turnover24h'] > 3e+07)]
     added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e+07)]
+    added_symbols = added_list["symbol"].tolist()
+    added_symbols = [x for x in added_symbols if x not in get_list]
+    for i in range(len(added_symbols)):
+      if(i > wish_item_no): break
+      try_item.append(added_symbols[i])
 
-    wish_item_no = len(added_list) + len(try_item)
-#  if(wish_item_no > 15): wish_item_no = 15
-    if(wish_item_no > 10): wish_item_no = 10
-    i, j = 0, 0
-    while len(try_item) < wish_item_no:
-      while i < len(try_item):
-        if(j >= len(added_list)): break
-        elif(try_item[i] == added_list.iloc[j]['symbol']):
-          j = j + 1
-          i = 0
-        elif(try_item[i] != added_list.iloc[j]['symbol']): i = i + 1
-
-      if(j >= len(added_list)): break
-      else: try_item.append(added_list.iloc[j]['symbol'])
-      i = 0
+    for i in range(len(get_list)):
+      if(i > wish_item_no): break
+      try_item.append(get_list[i])    
 #-------------------------------------------------------------------------------
 #print(try_item)
 #-------------------------------------------------------------------------------
