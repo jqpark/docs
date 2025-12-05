@@ -1,4 +1,4 @@
-#v5_test14-12-8_SMA020_251127-1730
+#v5_test14-12-9_SMA020_251205-1500
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #problume -> v5_test14-9-4_JQPARK_251014-1730 -> v5_test13-6-2_JQPARK_250523-1620 - retry code
@@ -404,19 +404,21 @@ while True:
     symbol_list = (pd.DataFrame(tickers)['symbol'])
     turnover_list = (pd.DataFrame(tickers)['turnover24h']).astype(float)
     price_list = (pd.DataFrame(tickers)['lastPrice']).astype(float)
-    values = pd.concat([symbol_list,turnover_list,price_list],axis=1)
-    sort_list = values.sort_values('turnover24h',ignore_index=True,ascending=False)
+    diff_list = (pd.DataFrame(tickers)['price24hPcnt']).astype(float)  
+    values = pd.concat([symbol_list,turnover_list,price_list,diff_list],axis=1)
+    sort_list = values.sort_values('price24hPcnt',key=lambda x: x.abs(),ignore_index=True,ascending=False)
 #  added_list = sort_list[(sort_list['lastPrice'] > 0.01) & (sort_list['lastPrice'] < 2) & (sort_list['turnover24h'] > 3e+07)]
-    added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e+07)]
+#    added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e+07)]
+    added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2))]
     added_symbols = added_list["symbol"].tolist()
     added_symbols = [x for x in added_symbols if x not in get_list]
     for i in range(len(added_symbols)):
-      if(i > wish_item_no): break
+      if(i >= wish_item_no): break
       try_item.append(added_symbols[i])
 
-    for i in range(len(get_list)):
-      if(i > wish_item_no): break
-      try_item.append(get_list[i])    
+#    for i in range(len(get_list)):
+#      if(len(try_item) >= wish_item_no): break
+#      try_item.append(get_list[i])
 #-------------------------------------------------------------------------------
 #print(try_item)
 #-------------------------------------------------------------------------------
@@ -813,9 +815,9 @@ while True:
 #            time.sleep(1)
 #            order_condition[item_no] = 'PF_L_closed'
 #            order_info[item_no] = [order_condition[item_no], value_s_list[item_no], value_v_list[item_no]]
-#            opened_order_info = [sym_bol, l_unpnl, order_condition[item_no], order_info[item_no]]
-#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#            requests.get(url).json() # this sends the message
+##            opened_order_info = [sym_bol, l_unpnl, order_condition[item_no], order_info[item_no]]
+##            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
+##            requests.get(url).json() # this sends the message
             
 #        if(short_qty != 0) and (float(s_unpnl) >= (invest_usdt * 0.1)) and (value_v_list[item_no][0] == 1):  
 #            add_order = [sym_bol, "Buy", 2]
@@ -823,9 +825,9 @@ while True:
 #            time.sleep(1)
 #            order_condition[item_no] = 'PF_S_closed'
 #            order_info[item_no] = [order_condition[item_no], value_s_list[item_no], value_v_list[item_no]]
-#            opened_order_info = [sym_bol, s_unpnl, order_condition[item_no], order_info[item_no]]
-#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#            requests.get(url).json() # this sends the message
+##            opened_order_info = [sym_bol, s_unpnl, order_condition[item_no], order_info[item_no]]
+##            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
+##            requests.get(url).json() # this sends the message
 ###############################################################################
 #-------------------------------------------------------------------------------
         res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
@@ -844,7 +846,7 @@ while True:
 #-------------------------------------------------------------------------------
 #          if(m_get_open == []) and (l_get_open == []):
 #-------------------------------------------------------------------------------
-            if(long_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
+            if(long_qty == 0) and (short_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
                 if(value_v_list[item_no][0] == 1) and (float(max_lever) >= float(l_sym_lever)):
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price]                  
@@ -877,7 +879,7 @@ while True:
 #                    order_condition[item_no] = 'L3_limit_order'
 #                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
 
-            if(short_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
+            if(short_qty == 0) and (long_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
                 if(value_v_list[item_no][0] == 2) and (float(max_lever) >= float(s_sym_lever)):
                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price]                  
@@ -914,7 +916,7 @@ while True:
           ex_act_price = str(float(l_ent_price) + (abs(float(l_ent_price) - float(l_st_loss))))
           act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
           if(float(l_trailing) == 0) and (float(act_price) > sym_price):
-            ex_ts_diff = abs(float(l_ent_price) - float(l_st_loss)) * 1.0
+            ex_ts_diff = abs(float(l_ent_price) - float(l_st_loss)) * 2.0
             ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
             add_order = [sym_bol, ts_diff, act_price, 1]
             set_trading_stop_item(add_order)
@@ -936,7 +938,7 @@ while True:
           ex_act_price = str(float(s_ent_price) - (abs(float(s_ent_price) - float(s_st_loss))))
           act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
           if(float(s_trailing) == 0) and (float(act_price) < sym_price):
-            ex_ts_diff = abs(float(s_ent_price) - float(s_st_loss)) * 1.0
+            ex_ts_diff = abs(float(s_ent_price) - float(s_st_loss)) * 2.0
             ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
             add_order = [sym_bol, ts_diff, act_price, 2]
             set_trading_stop_item(add_order)
