@@ -71,9 +71,8 @@ if(order_id == SMA020):
 invest_usdt = 2
 delay_time = 60 #time_itv*60
 check_time = 0
-check_time1 = 0
 return_time = 10
-print_time = 100
+print_time = 300
 first_time = int(time.time())
 ###############################################################################
 ##############################################################################
@@ -191,7 +190,7 @@ def set_trading_stop_item(add_order):
 def search_calc(search_list):
   order_list = []
   min_lever = 10 
-  remainder = 5  
+  remainder = 3  
   for item in range(len(search_list)):  
     itv = 3
     sym_bol = search_list[item]
@@ -256,6 +255,7 @@ def search_calc(search_list):
     print(sym_bol,mx_point,mn_point,max_num,min_num)
     print(sym_bol,vl_per,vol_per,new_lever,cal_lever,all_lever)
     if(new_lever > (cal_lever * 2)) and (new_lever < min_lever): order_list.append(sym_bol)
+  print('search list return')   
   return(order_list)  
 ################################################################################
 def order_calc(sym_bol):
@@ -413,6 +413,8 @@ while True:
   max_t_position = tot_position
 
   try_item = []
+  item_list, get_positions, del_list = [], [], []
+  except_list, open_list, trail_list = [], [], []
 #  if(avail_usdt < (invest_usdt * 2)):
 #    item_list = session.get_open_orders(category="linear",settleCoin="USDT")['result']['list']
 #    if(item_list == []): rest_item = []
@@ -422,22 +424,31 @@ while True:
 #      else: try_item.append(rest_item[i])
 
   item_list = pd.DataFrame(session.get_open_orders(category="linear",settleCoin="USDT",orderFilter='StopOrder',limit=50)['result']['list'])
-  if item_list.empty: except_list, open_list, Trail_list = [], [], []
+  if item_list.empty: except_list, open_list, trail_list = [], [], []
   else:
-    open_list = list(set(item_list['symbol'].to_list()))
-    Trail_list = item_list[(item_list['stopOrderType'] == 'TrailingStop')]
-    check_condition = lambda x: {1, 2}.issubset(set(x))
-    double_list = item_list[item_list.groupby('symbol')['positionIdx'].transform(check_condition)]
-    except_list = list(set(pd.concat([Trail_list,double_list],axis=0)["symbol"].tolist()))
-  set_except = set(except_list)
-  rest_list = [item for item in open_list if item not in set_except]
+      open_list = item_list['symbol'].unique().tolist()
+      trail_list = item_list[(item_list['stopOrderType'] == 'TrailingStop')]
+      if trail_list.empty: trail_list = []
+      else: trail_list = trail_list['symbol'].unique().tolist()
+      stop_list = item_list[(item_list['stopOrderType'] == 'Stop')]
+      if stop_list.empty: stop_list = []
+      else: stop_list = stop_list['symbol'].unique().tolist()
+#      check_condition = lambda x: {1, 2}.issubset(set(x))
+#      double_list = item_list[item_list.groupby('symbol')['positionIdx'].transform(check_condition)]
+#      if double_list.empty: double_list = []
+#      else: double_list = double_list['symbol'].unique().tolist()
+#      if(trail_list != []) and (double_list != []): except_list = list(set(trail_list + double_list))
+#      else: except_list = [] 
+#  set_except = set(except_list)
+#  rest_list = [item for item in open_list if item not in set_except]    
 
   get_positions = session.get_positions(category="linear",settleCoin="USDT")['result']['list']
   if(get_positions == []): get_item, get_list = [], []
   else: 
     get_item = pd.DataFrame(get_positions)['symbol']
     get_list = get_item.tolist()
-
+    
+  final_del_list = []
   del_list = session.get_announcement(locale="en-US",type='Delistings',tag='Derivatives')['result']['list']
   if(del_list == []): title_list = []
   else: title_list = [item['title'] for item in del_list]
@@ -445,7 +456,7 @@ while True:
   for title in title_list:
     all_words.extend(re.findall(r'\b\w+\b', title)) 
   uppercase_words = {word for word in all_words if word.isupper()}
-  final_del_list = sorted(list(uppercase_words))
+  final_del_list = sorted(uppercase_words)
 #rest_item = try_item.copy()
 #-------------------------------------------------------------------------------
 #  first_time = int(time.time())
@@ -480,6 +491,7 @@ while True:
 # order_calc
   if(search_item == []): search_result = []
   else: search_result = search_calc(search_item)
+  
   if(search_result == []): order_result = []
   else:
       for sym_bol in search_result:
@@ -607,14 +619,14 @@ while True:
         s_ex_value = float(s_order_qty) * float(s_order_price) * 0.8
 #-------------------------------------------------------------------------------
         if(long_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
-                if(order_result[0] == 11) and (float(max_lever) >= float(l_sym_lever)):
+                if(order_result[0] == 1) and (float(max_lever) >= float(l_sym_lever)):
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_tp_price, l_st_price]
                     conditional_market_part(add_order)
                     time.sleep(1)
 
         if(short_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
-                if(order_result[0] == 11) and (float(max_lever) >= float(s_sym_lever)):
+                if(order_result[0] == 1) and (float(max_lever) >= float(s_sym_lever)):
                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_order_price, 2, s_tp_price, s_st_price]                  
                     conditional_market_part(add_order)
@@ -623,6 +635,9 @@ while True:
 #-------------------------------------------------------------------------------
   if(open_list != []):
     for sym_bol in open_list:
+      sym_info=session.get_tickers(category="linear",symbol=sym_bol)['result']['list']
+      sym_price = float(pd.DataFrame(sym_info)['lastPrice'][0])
+    
       res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
       time.sleep(1)
       position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
@@ -714,11 +729,28 @@ while True:
             url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
             requests.get(url).json() # this sends the message
 #-------------------------------------------------------------------------------
-      if(sym_bol in Trail_list):
+#      m_order_type_list = []
+#      m_order_idx, m_order_tp, m_order_st = [0, 0, 0], [0, 0, 0], [0, 0, 0]
+#      m_get_open=session.get_open_orders(category="linear",symbol=sym_bol,orderFilter='StopOrder')['result']['list']
+#      m_stop_order_list = [(m_stop_order["positionIdx"],m_stop_order["triggerPrice"], m_stop_order["stopLoss"]) for m_stop_order in m_get_open if m_stop_order.get("stopOrderType") == "Stop"]
+#      if(m_stop_order_list != []):
+#        for list in range(len(m_stop_order_list)):
+#          if(m_stop_order_list[list][0] == 1):
+#            m_order_idx[1], m_order_tp[1], m_order_st[1] = m_stop_order_list[list][0], float(m_stop_order_list[list][1]), float(m_stop_order_list[list][2])
+#          if(m_stop_order_list[list][0] == 2):
+#            m_order_idx[2], m_order_tp[2], m_order_st[2] = m_stop_order_list[list][0], float(m_stop_order_list[list][1]), float(m_stop_order_list[list][2])
+            
+      if(sym_bol in trail_list):
+        session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+      if(sym_bol in stop_list) and (long_qty == 0) and (short_qty == 0):
         session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
 
+#      if(long_qty == 0) and (m_order_idx[1] == 0) and (m_order_idx[2] == 2):
+#        session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+#      if(short_qty == 0) and (m_order_idx[1] == 1) and (m_order_idx[2] == 0):
+#        session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')        
 #-------------------------------------------------------------------------------
-        if(long_qty != 0):
+      if(long_qty != 0):
           if(float(l_position_im) > (invest_usdt * 1.5)):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
@@ -728,7 +760,7 @@ while True:
             url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
             requests.get(url).json() # this sends the message
 
-        if(short_qty != 0):
+      if(short_qty != 0):
           if(float(s_position_im) > (invest_usdt * 1.5)):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
@@ -738,14 +770,19 @@ while True:
             url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
             requests.get(url).json() # this sends the message
 #-------------------------------------------------------------------------------
+  print('order check return')   
 #-------------------------------------------------------------------------------
-  check_time = check_time + 1
-  if(check_time == print_time):
+  if(check_time == 0):
     btc_info=session.get_tickers(category="linear",symbol='BTCUSDT')['result']['list']
     btc_price = float(pd.DataFrame(btc_info)['lastPrice'][0])
     url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'order_id_Equity = ',round(live_usdt,2), 'My Wallet = ', round(my_usdt,2),'BTCUSDT = ',btc_price}"
     requests.get(url).json() # this sends the message  max_usdt = live_usdt
-    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'rest_list:',open_list}"
+    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'get_list:',get_list}"
     requests.get(url).json() # this sends the message
     check_time = 0
+  check_time = check_time + 1
+  if(check_time == print_time):
+    check_time = 0
+    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'100 time'}"
+    requests.get(url).json() # this sends the message
 ###############################################################################
