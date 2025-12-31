@@ -1,4 +1,4 @@
-#v5_test15-0-0_SMA020_251226-1500
+#v5_test15-1-0_SMA000_251231-1200
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #telegram update using nest_asyncio
@@ -25,7 +25,7 @@ SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
 SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
 chat_id = 5372863028
 
-order_id = SMA020
+order_id = SMA000
 
 #MAIN_JQ
 if(order_id == MAIN_JQ):
@@ -82,7 +82,7 @@ delay_time = 60 #time_itv*60
 check_time = 0
 check_time1 = 0
 return_time = 10
-print_time = 100
+print_time = 300
 first_time = int(time.time())
 ###############################################################################
 ##############################################################################
@@ -215,27 +215,41 @@ def search_calc(sym_bol):
       v_list.append(float(kline[5][i]))
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
-  order_position = 0
+  search_position, order_position = 0, 0
   std_diff = c_list[0] * 0.5 / 5
   min_diff = c_list[0] * 0.5 / 10
-  max_diff = max(h_list) - min(l_list)
+  opn_max, opn_min = max(o_list), min(o_list)
+  cls_max, cls_min = max(c_list), min(c_list)
+  max_diff = max(opn_max, cls_max) - min(opn_min, cls_min)
   max_lever = round(c_list[0] * 0.5 / max_diff,2) 
-  new_max, new_min = max(h_list), min(l_list)
-  max_num, min_num = h_list.index(new_max), l_list.index(new_min)
+  if(opn_max > cls_max): new_max, max_num = opn_max, o_list.index(opn_max)
+  else: new_max, max_num = cls_max, c_list.index(cls_max)
+  if(opn_min < cls_min): new_min, min_num = opn_min, o_list.index(opn_min)
+  else: new_min, min_num = cls_min, c_list.index(cls_min)  
+#  new_max, new_min = max(h_list), min(l_list)
+#  max_num, min_num = h_list.index(new_max), l_list.index(new_min)
   ord_max, ord_min, ord_xnum, ord_nnum = new_max, new_min, max_num, min_num
   ord_diff, ord_lever = max_diff, max_lever
-  for i in range(len(h_list)):
+  for i in range(len(c_list)):
     max_diff = new_max - new_min
     if(max_num < min_num) and (max_num != 0):
       new_max = new_max
-      new_min = min(l_list[:max_num])
       max_num = max_num
-      min_num = l_list.index(new_min)
+      opn_min = min(o_list[:max_num])
+      cls_min = min(c_list[:max_num])
+      if(opn_min < cls_min): new_min, min_num = opn_min, o_list.index(opn_min)
+      else: new_min, min_num = cls_min, c_list.index(cls_min)  
+#      new_min = min(l_list[:max_num])
+#      min_num = l_list.index(new_min)
     elif(max_num > min_num) and (min_num != 0):
-      new_max = max(h_list[:min_num])
       new_min = new_min
-      max_num = h_list.index(new_max)
       min_num = min_num
+      opn_max = max(o_list[:min_num])
+      cls_max = max(c_list[:min_num])
+      if(opn_max > cls_max): new_max, max_num = opn_max, o_list.index(opn_max)
+      else: new_max, max_num = cls_max, c_list.index(cls_max)
+#      new_max = max(h_list[:min_num])
+#      max_num = h_list.index(new_max)
     else:
       new_max = new_max
       new_min = new_min
@@ -246,7 +260,138 @@ def search_calc(sym_bol):
     if(std_diff > new_diff > min_diff):
       ord_max, ord_min, ord_xnum, ord_nnum = new_max, new_min, max_num, min_num
       ord_diff, ord_lever = new_diff, new_lever
-      order_position = 1
+      search_position = 1
+      break
+    if(new_diff < min_diff): break
+    if(max_num == min_num): break
+  v_p_calc, v_m_calc, p_p_calc, p_m_calc, l_p_calc, l_m_calc = 0, 0, 0, 0, 0, 0
+  v_p_add, v_m_add, p_p_add, p_m_add, l_p_add, l_m_add = [], [], [], [], [], []
+  lx = max(ord_xnum, ord_nnum)
+  ln = min(ord_xnum, ord_nnum)
+  for m in range(len(c_list[ln+1:lx])):
+    if(h_list[m] == l_list[m]): diff_per = 0
+    else: diff_per = (c_list[m] - o_list[m]) / (h_list[m] - l_list[m])
+    if(diff_per > 0):
+      v_p_calc = v_list[m] * diff_per
+      v_m_calc = 0
+    elif(diff_per < 0):
+      v_m_calc = v_list[m] * diff_per
+      v_p_calc = 0
+    else:
+      v_p_calc, v_m_calc = 0, 0
+    v_p_add.append(v_p_calc) 
+    v_m_add.append(v_m_calc) 
+
+  for n in range(len(c_list[:ln])):
+    if(h_list[n] == l_list[n]): diff_per = 0
+    else: diff_per = (c_list[n] - o_list[n]) / (h_list[n] - l_list[n])
+    if(diff_per > 0):
+      p_p_calc = v_list[n] * diff_per
+      p_m_calc = 0
+    elif(diff_per < 0):
+      p_m_calc = v_list[n] * diff_per
+      p_p_calc = 0
+    else:
+      p_p_calc, p_m_calc = 0, 0
+    p_p_add.append(p_p_calc) 
+    p_m_add.append(p_m_calc) 
+
+  v_p_sum, p_p_sum, v_m_sum, p_m_sum = sum(v_p_add), sum(p_p_add), sum(v_m_add), sum(p_m_add)
+  v_sum, p_sum = abs(v_p_sum) + abs(v_m_sum), abs(p_p_sum) + abs(p_m_sum)
+#  v_sum, p_sum = v_p_sum + v_m_sum, p_p_sum + p_m_sum
+  if(v_p_sum + abs(v_m_sum) == 0): v_p_per = 0
+  else: v_p_per = v_p_sum / (v_p_sum + abs(v_m_sum)) * 100
+  if(p_p_sum + abs(p_m_sum) == 0): p_p_per = 0  
+  else: p_p_per = p_p_sum / (p_p_sum + abs(p_m_sum)) * 100
+  if(ord_xnum > ord_nnum):
+    vl_diff = max(c_list[lx-1],o_list[lx-1]) - min(c_list[ln],o_list[ln]) 
+    pl_diff = min(c_list[ln-1],o_list[ln-1]) - max(c_list[0],o_list[0]) 
+  else:
+    vl_diff = min(c_list[lx-1],o_list[lx-1]) - max(c_list[ln],o_list[ln])
+    pl_diff = max(c_list[ln+1],o_list[ln+1]) - min(c_list[0],o_list[0])
+  vl_per = abs(vl_diff * v_sum)
+  pl_per = abs(pl_diff * p_sum)
+  if(search_position == 1) and (vl_per < pl_per): order_position = 1
+  h_max = max(h_list[:max(ord_xnum, ord_nnum)+1])
+  l_min = min(l_list[:max(ord_xnum, ord_nnum)+1])
+  hl_diff = h_max - l_min
+  limit_diff = hl_diff
+#-------------------------------------------------------------------------------
+  return(order_position)
+#-------------------------------------------------------------------------------
+###############################################################################
+################################################################################
+#        order_value = [sym_bol, sym_price, order_condition[item_no], limit_diff_p[item_no],
+#                       value_s_list[item_no], value_v_list[item_no]]
+def order_calc(order_value):
+  itv = 3
+  sym_bol = order_value[0]
+  sym_price = order_value[1]
+  open_order_condition = order_value[2]
+  limit_diff = order_value[3]
+  s_value_list = order_value[4]
+  v_value_list = order_value[5]
+#-------------------------------------------------------------------------------
+  get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
+#  time.sleep(1)
+  kline = pd.DataFrame(get_kline)
+
+  t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
+  for i in range(len(kline[0])):
+      t_list.append(int(kline[0][i]))
+      o_list.append(float(kline[1][i]))
+      h_list.append(float(kline[2][i]))
+      l_list.append(float(kline[3][i]))
+      c_list.append(float(kline[4][i]))
+      v_list.append(float(kline[5][i]))
+      p_list.append(float(kline[6][i]))
+#-------------------------------------------------------------------------------
+  search_position, order_position = 0, 0
+  std_diff = c_list[0] * 0.5 / 5
+  min_diff = c_list[0] * 0.5 / 10
+  opn_max, opn_min = max(o_list), min(o_list)
+  cls_max, cls_min = max(c_list), min(c_list)
+  max_diff = max(opn_max, cls_max) - min(opn_min, cls_min)
+  max_lever = round(c_list[0] * 0.5 / max_diff,2) 
+  if(opn_max > cls_max): new_max, max_num = opn_max, o_list.index(opn_max)
+  else: new_max, max_num = cls_max, c_list.index(cls_max)
+  if(opn_min < cls_min): new_min, min_num = opn_min, o_list.index(opn_min)
+  else: new_min, min_num = cls_min, c_list.index(cls_min)  
+#  new_max, new_min = max(h_list), min(l_list)
+#  max_num, min_num = h_list.index(new_max), l_list.index(new_min)
+  ord_max, ord_min, ord_xnum, ord_nnum = new_max, new_min, max_num, min_num
+  ord_diff, ord_lever = max_diff, max_lever
+  for i in range(len(c_list)):
+    max_diff = new_max - new_min
+    if(max_num < min_num) and (max_num != 0):
+      new_max = new_max
+      max_num = max_num
+      opn_min = min(o_list[:max_num])
+      cls_min = min(c_list[:max_num])
+      if(opn_min < cls_min): new_min, min_num = opn_min, o_list.index(opn_min)
+      else: new_min, min_num = cls_min, c_list.index(cls_min)  
+#      new_min = min(l_list[:max_num])
+#      min_num = l_list.index(new_min)
+    elif(max_num > min_num) and (min_num != 0):
+      new_min = new_min
+      min_num = min_num
+      opn_max = max(o_list[:min_num])
+      cls_max = max(c_list[:min_num])
+      if(opn_max > cls_max): new_max, max_num = opn_max, o_list.index(opn_max)
+      else: new_max, max_num = cls_max, c_list.index(cls_max)
+#      new_max = max(h_list[:min_num])
+#      max_num = h_list.index(new_max)
+    else:
+      new_max = new_max
+      new_min = new_min
+      max_num = max_num
+      min_num = min_num
+    new_diff = new_max - new_min
+    new_lever = round(c_list[0] * 0.5 / new_diff,2) 
+    if(std_diff > new_diff > min_diff):
+      ord_max, ord_min, ord_xnum, ord_nnum = new_max, new_min, max_num, min_num
+      ord_diff, ord_lever = new_diff, new_lever
+      search_position = 1
       break
     if(new_diff < min_diff): break
     if(max_num == min_num): break
@@ -294,87 +439,17 @@ def search_calc(sym_bol):
   else:
     vl_diff = min(c_list[lx-1],o_list[lx-1]) - max(c_list[ln],o_list[ln])
     pl_diff = max(c_list[ln+1],o_list[ln+1]) - min(c_list[0],o_list[0])
-#  vl_per = abs(vl_diff / v_sum)
-#  pl_per = abs(pl_diff / p_sum)
-  vl1_per = abs(vl_diff * v_sum)
-  pl1_per = abs(pl_diff * p_sum)
-#  vp_per = vl_per / (vl_per + pl_per) * 100
-  if(order_position == 1):
-#    print(round(v_p_per,2),round(p_p_per,2))
-#    print(vl_diff,pl_diff)
-    print(round(vl1_per,2),round(pl1_per,2))
-#    print(round(vp_per,2))
-    print(ord_max, ord_min, ord_xnum, ord_nnum)
-  limit_diff = ord_diff
-  print(sym_bol, order_position)
-#-------------------------------------------------------------------------------
-  return(order_position)
-#-------------------------------------------------------------------------------
-###############################################################################
-################################################################################
-#        order_value = [sym_bol, sym_price, order_condition[item_no], limit_diff_p[item_no],
-#                       value_s_list[item_no], value_v_list[item_no]]
-def order_calc(order_value):
-  itv = 3
-  sym_bol = order_value[0]
-  sym_price = order_value[1]
-  open_order_condition = order_value[2]
-  limit_diff = order_value[3]
-  s_value_list = order_value[4]
-  v_value_list = order_value[5]
-#-------------------------------------------------------------------------------
-  get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
-#  time.sleep(1)
-  kline = pd.DataFrame(get_kline)
-
-  t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
-  for i in range(len(kline[0])):
-      t_list.append(int(kline[0][i]))
-      o_list.append(float(kline[1][i]))
-      h_list.append(float(kline[2][i]))
-      l_list.append(float(kline[3][i]))
-      c_list.append(float(kline[4][i]))
-      v_list.append(float(kline[5][i]))
-      p_list.append(float(kline[6][i]))
-#-------------------------------------------------------------------------------
-  order_position = 0
-  std_diff = c_list[0] * 0.5 / 5
-  min_diff = c_list[0] * 0.5 / 10
-  max_diff = max(h_list) - min(l_list)
-  max_lever = round(c_list[0] * 0.5 / max_diff,2) 
-  new_max, new_min = max(h_list), min(l_list)
-  max_num, min_num = h_list.index(new_max), l_list.index(new_min)
-  ord_max, ord_min, ord_xnum, ord_nnum = new_max, new_min, max_num, min_num
-  ord_diff, ord_lever = max_diff, max_lever
-  for i in range(len(h_list)):
-    max_diff = new_max - new_min
-    if(max_num < min_num) and (max_num != 0):
-      new_max = new_max
-      new_min = min(l_list[:max_num])
-      max_num = max_num
-      min_num = l_list.index(new_min)
-    elif(max_num > min_num) and (min_num != 0):
-      new_max = max(h_list[:min_num])
-      new_min = new_min
-      max_num = h_list.index(new_max)
-      min_num = min_num
-    else:
-      new_max = new_max
-      new_min = new_min
-      max_num = max_num
-      min_num = min_num
-    new_diff = new_max - new_min
-    new_lever = round(c_list[0] * 0.5 / new_diff,2) 
-    if(std_diff > new_diff > min_diff):
-      ord_max, ord_min, ord_xnum, ord_nnum = new_max, new_min, max_num, min_num
-      ord_diff, ord_lever = new_diff, new_lever
-      order_position = 1
-    if(new_diff < min_diff): break
-    if(max_num == min_num): break
-  limit_diff = ord_diff    
-  mx_time = float(t_list[max_num] * 0.001)
+  vl_per = abs(vl_diff * v_sum)
+  pl_per = abs(pl_diff * p_sum)
+  if(search_position == 1) and (vl_per < pl_per): order_position = 1
+  h_max = max(h_list[:max(ord_xnum, ord_nnum)+1])
+  l_min = min(l_list[:max(ord_xnum, ord_nnum)+1])
+  hl_diff = h_max - l_min
+  limit_diff = hl_diff
+  
+  mx_time = float(t_list[ord_xnum] * 0.001)
   mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
-  mn_time = float(t_list[min_num] * 0.001)
+  mn_time = float(t_list[ord_nnum] * 0.001)
   mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
   s_value_list = [order_position, ord_max, ord_min, ord_lever]
   v_value_list = [mx_server_time, mn_server_time]
@@ -732,7 +807,7 @@ while True:
         l_order_qty = str(int(Decimal(l_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
         l_tp_ex_price = str(h_price + (limit_diff_p[item_no] * 1) + float(tick_size))
         l_tp_price = str(int(Decimal(l_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-        l_st_ex_price = str(l_price - float(tick_size))
+        l_st_ex_price = str(h_price - limit_diff_p[item_no] - float(tick_size))
         l_st_price = str(int(Decimal(l_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_order_side = 'Buy'
         l_order_position = 1
@@ -744,7 +819,7 @@ while True:
         s_order_qty = str(int(Decimal(s_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
         s_tp_ex_price = str(l_price - (limit_diff_p[item_no] * 1) - float(tick_size))
         s_tp_price = str(int(Decimal(s_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-        s_st_ex_price = str(h_price + float(tick_size))
+        s_st_ex_price = str(l_price + limit_diff_p[item_no] + float(tick_size))
         s_st_price = str(int(Decimal(s_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_order_side = 'Sell'
         s_order_position = 2
