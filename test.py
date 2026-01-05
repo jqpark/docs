@@ -1,4 +1,4 @@
-#v5_test15-1-0_SMA000_251231-1200
+#v5_test15-1-0_JQPARK_260105-1200
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #telegram update using nest_asyncio
@@ -25,7 +25,7 @@ SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
 SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
 chat_id = 5372863028
 
-order_id = SMA000
+order_id = JQPARK
 
 #MAIN_JQ
 if(order_id == MAIN_JQ):
@@ -202,7 +202,7 @@ def search_calc(sym_bol):
   itv = 3
 #-------------------------------------------------------------------------------
   get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
-#  time.sleep(1)
+  time.sleep(1)
   kline = pd.DataFrame(get_kline)
 
   t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
@@ -222,12 +222,8 @@ def search_calc(sym_bol):
   cls_max, cls_min = max(c_list), min(c_list)
   max_diff = max(opn_max, cls_max) - min(opn_min, cls_min)
   max_lever = round(c_list[0] * 0.5 / max_diff,2) 
-  if(opn_max > cls_max): new_max, max_num = opn_max, o_list.index(opn_max)
-  else: new_max, max_num = cls_max, c_list.index(cls_max)
-  if(opn_min < cls_min): new_min, min_num = opn_min, o_list.index(opn_min)
-  else: new_min, min_num = cls_min, c_list.index(cls_min)  
-#  new_max, new_min = max(h_list), min(l_list)
-#  max_num, min_num = h_list.index(new_max), l_list.index(new_min)
+  new_max, new_min = max(h_list), min(l_list)
+  max_num, min_num = h_list.index(new_max), l_list.index(new_min)
   ord_max, ord_min, ord_xnum, ord_nnum = new_max, new_min, max_num, min_num
   ord_diff, ord_lever = max_diff, max_lever
   for i in range(len(c_list)):
@@ -235,21 +231,13 @@ def search_calc(sym_bol):
     if(max_num < min_num) and (max_num != 0):
       new_max = new_max
       max_num = max_num
-      opn_min = min(o_list[:max_num])
-      cls_min = min(c_list[:max_num])
-      if(opn_min < cls_min): new_min, min_num = opn_min, o_list.index(opn_min)
-      else: new_min, min_num = cls_min, c_list.index(cls_min)  
-#      new_min = min(l_list[:max_num])
-#      min_num = l_list.index(new_min)
+      new_min = min(l_list[:max_num])
+      min_num = l_list.index(new_min)
     elif(max_num > min_num) and (min_num != 0):
       new_min = new_min
       min_num = min_num
-      opn_max = max(o_list[:min_num])
-      cls_max = max(c_list[:min_num])
-      if(opn_max > cls_max): new_max, max_num = opn_max, o_list.index(opn_max)
-      else: new_max, max_num = cls_max, c_list.index(cls_max)
-#      new_max = max(h_list[:min_num])
-#      max_num = h_list.index(new_max)
+      new_max = max(h_list[:min_num])
+      max_num = h_list.index(new_max)
     else:
       new_max = new_max
       new_min = new_min
@@ -264,58 +252,43 @@ def search_calc(sym_bol):
       break
     if(new_diff < min_diff): break
     if(max_num == min_num): break
-  v_p_calc, v_m_calc, p_p_calc, p_m_calc, l_p_calc, l_m_calc = 0, 0, 0, 0, 0, 0
-  v_p_add, v_m_add, p_p_add, p_m_add, l_p_add, l_m_add = [], [], [], [], [], []
+#-------------------------------------------------------------------------------    
+  if(min(ord_xnum, ord_nnum) <= 1):
+    return(order_position)    
+#-------------------------------------------------------------------------------
+  v_b_add, p_b_add, v_f_add, p_f_add = [], [], [], []
   lx = max(ord_xnum, ord_nnum)
   ln = min(ord_xnum, ord_nnum)
   for m in range(len(c_list[ln+1:lx])):
-    if(h_list[m] == l_list[m]): diff_per = 0
-    else: diff_per = (c_list[m] - o_list[m]) / (h_list[m] - l_list[m])
-    if(diff_per > 0):
-      v_p_calc = v_list[m] * diff_per
-      v_m_calc = 0
-    elif(diff_per < 0):
-      v_m_calc = v_list[m] * diff_per
-      v_p_calc = 0
-    else:
-      v_p_calc, v_m_calc = 0, 0
-    v_p_add.append(v_p_calc) 
-    v_m_add.append(v_m_calc) 
+    v_b_add.append(v_list[m]) 
+    p_b_add.append(p_list[m]) 
 
   for n in range(len(c_list[:ln])):
-    if(h_list[n] == l_list[n]): diff_per = 0
-    else: diff_per = (c_list[n] - o_list[n]) / (h_list[n] - l_list[n])
-    if(diff_per > 0):
-      p_p_calc = v_list[n] * diff_per
-      p_m_calc = 0
-    elif(diff_per < 0):
-      p_m_calc = v_list[n] * diff_per
-      p_p_calc = 0
-    else:
-      p_p_calc, p_m_calc = 0, 0
-    p_p_add.append(p_p_calc) 
-    p_m_add.append(p_m_calc) 
+    v_f_add.append(v_list[n]) 
+    p_f_add.append(p_list[n]) 
 
-  v_p_sum, p_p_sum, v_m_sum, p_m_sum = sum(v_p_add), sum(p_p_add), sum(v_m_add), sum(p_m_add)
-  v_sum, p_sum = abs(v_p_sum) + abs(v_m_sum), abs(p_p_sum) + abs(p_m_sum)
-#  v_sum, p_sum = v_p_sum + v_m_sum, p_p_sum + p_m_sum
-  if(v_p_sum + abs(v_m_sum) == 0): v_p_per = 0
-  else: v_p_per = v_p_sum / (v_p_sum + abs(v_m_sum)) * 100
-  if(p_p_sum + abs(p_m_sum) == 0): p_p_per = 0  
-  else: p_p_per = p_p_sum / (p_p_sum + abs(p_m_sum)) * 100
+  v_b_sum, p_b_sum, v_f_sum, p_f_sum = sum(v_b_add), sum(p_b_add), sum(v_f_add), sum(p_f_add)
+  v_sum, p_sum = v_b_sum + v_f_sum, p_b_sum + p_f_sum
+  if(v_sum == 0): v_f_per = 0
+  else: v_f_per = v_f_sum / v_sum * 100
+  if(p_sum == 0): p_f_per = 0
+  else: p_f_per = p_f_sum / p_sum * 100
   if(ord_xnum > ord_nnum):
-    vl_diff = max(c_list[lx-1],o_list[lx-1]) - min(c_list[ln],o_list[ln]) 
-    pl_diff = min(c_list[ln-1],o_list[ln-1]) - max(c_list[0],o_list[0]) 
+    bl_diff = h_list[lx-1] - l_list[ln]
+    fl_diff = l_list[ln-1] - max(h_list[:ln-1])
   else:
-    vl_diff = min(c_list[lx-1],o_list[lx-1]) - max(c_list[ln],o_list[ln])
-    pl_diff = max(c_list[ln+1],o_list[ln+1]) - min(c_list[0],o_list[0])
-  vl_per = abs(vl_diff * v_sum)
-  pl_per = abs(pl_diff * p_sum)
-  if(search_position == 1) and (vl_per < pl_per): order_position = 1
+    bl_diff = l_list[lx-1] - h_list[ln]
+    fl_diff = h_list[ln-1] - min(l_list[:ln-1])
+  vb_per, vf_per = abs(bl_diff * v_b_sum), abs(fl_diff * v_f_sum)
+  pb_per, pf_per = abs(bl_diff * p_b_sum), abs(fl_diff * p_f_sum)
+  v_per, p_per = vf_per / vb_per, pf_per / pb_per
+  if(search_position == 1) and (vb_per < vf_per) and (pb_per < pf_per): order_position = 1
   h_max = max(h_list[:max(ord_xnum, ord_nnum)+1])
   l_min = min(l_list[:max(ord_xnum, ord_nnum)+1])
   hl_diff = h_max - l_min
   limit_diff = hl_diff
+  print(sym_bol, round(v_f_per,2), round(p_f_per,2))
+  print(round(v_per,2), round(p_per,2))
 #-------------------------------------------------------------------------------
   return(order_position)
 #-------------------------------------------------------------------------------
@@ -333,7 +306,7 @@ def order_calc(order_value):
   v_value_list = order_value[5]
 #-------------------------------------------------------------------------------
   get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
-#  time.sleep(1)
+  time.sleep(1)
   kline = pd.DataFrame(get_kline)
 
   t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
@@ -353,12 +326,8 @@ def order_calc(order_value):
   cls_max, cls_min = max(c_list), min(c_list)
   max_diff = max(opn_max, cls_max) - min(opn_min, cls_min)
   max_lever = round(c_list[0] * 0.5 / max_diff,2) 
-  if(opn_max > cls_max): new_max, max_num = opn_max, o_list.index(opn_max)
-  else: new_max, max_num = cls_max, c_list.index(cls_max)
-  if(opn_min < cls_min): new_min, min_num = opn_min, o_list.index(opn_min)
-  else: new_min, min_num = cls_min, c_list.index(cls_min)  
-#  new_max, new_min = max(h_list), min(l_list)
-#  max_num, min_num = h_list.index(new_max), l_list.index(new_min)
+  new_max, new_min = max(h_list), min(l_list)
+  max_num, min_num = h_list.index(new_max), l_list.index(new_min)
   ord_max, ord_min, ord_xnum, ord_nnum = new_max, new_min, max_num, min_num
   ord_diff, ord_lever = max_diff, max_lever
   for i in range(len(c_list)):
@@ -366,21 +335,13 @@ def order_calc(order_value):
     if(max_num < min_num) and (max_num != 0):
       new_max = new_max
       max_num = max_num
-      opn_min = min(o_list[:max_num])
-      cls_min = min(c_list[:max_num])
-      if(opn_min < cls_min): new_min, min_num = opn_min, o_list.index(opn_min)
-      else: new_min, min_num = cls_min, c_list.index(cls_min)  
-#      new_min = min(l_list[:max_num])
-#      min_num = l_list.index(new_min)
+      new_min = min(l_list[:max_num])
+      min_num = l_list.index(new_min)
     elif(max_num > min_num) and (min_num != 0):
       new_min = new_min
       min_num = min_num
-      opn_max = max(o_list[:min_num])
-      cls_max = max(c_list[:min_num])
-      if(opn_max > cls_max): new_max, max_num = opn_max, o_list.index(opn_max)
-      else: new_max, max_num = cls_max, c_list.index(cls_max)
-#      new_max = max(h_list[:min_num])
-#      max_num = h_list.index(new_max)
+      new_max = max(h_list[:min_num])
+      max_num = h_list.index(new_max)
     else:
       new_max = new_max
       new_min = new_min
@@ -395,53 +356,44 @@ def order_calc(order_value):
       break
     if(new_diff < min_diff): break
     if(max_num == min_num): break
-  v_p_calc, v_m_calc, p_p_calc, p_m_calc, l_p_calc, l_m_calc = 0, 0, 0, 0, 0, 0
-  v_p_add, v_m_add, p_p_add, p_m_add, l_p_add, l_m_add = [], [], [], [], [], []
+#-------------------------------------------------------------------------------    
+  if(min(ord_xnum, ord_nnum) <= 1):
+    mx_time = float(t_list[ord_xnum] * 0.001)
+    mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
+    mn_time = float(t_list[ord_nnum] * 0.001)
+    mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
+    s_value_list = [order_position, ord_max, ord_min, ord_lever]
+    v_value_list = [mx_server_time, mn_server_time]
+    order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
+    return(order_return)
+#-------------------------------------------------------------------------------      
+  v_b_add, p_b_add, v_f_add, p_f_add = [], [], [], []
   lx = max(ord_xnum, ord_nnum)
   ln = min(ord_xnum, ord_nnum)
   for m in range(len(c_list[ln+1:lx])):
-    if(h_list[m] == l_list[m]): diff_per = 0
-    else: diff_per = (c_list[m] - o_list[m]) / (h_list[m] - l_list[m])
-    if(diff_per > 0):
-      v_p_calc = v_list[m] * diff_per
-      v_m_calc = 0
-    elif(diff_per < 0):
-      v_m_calc = v_list[m] * diff_per
-      v_p_calc = 0
-    else:
-      v_p_calc, v_m_calc = 0, 0
-    v_p_add.append(v_p_calc) 
-    v_m_add.append(v_m_calc) 
+    v_b_add.append(v_list[m]) 
+    p_b_add.append(p_list[m]) 
 
   for n in range(len(c_list[:ln])):
-    if(h_list[n] == l_list[n]): diff_per = 0
-    else: diff_per = (c_list[n] - o_list[n]) / (h_list[n] - l_list[n])
-    if(diff_per > 0):
-      p_p_calc = v_list[n] * diff_per
-      p_m_calc = 0
-    elif(diff_per < 0):
-      p_m_calc = v_list[n] * diff_per
-      p_p_calc = 0
-    else:
-      p_p_calc, p_m_calc = 0, 0
-    p_p_add.append(p_p_calc) 
-    p_m_add.append(p_m_calc) 
+    v_f_add.append(v_list[n]) 
+    p_f_add.append(p_list[n]) 
 
-  v_p_sum, p_p_sum, v_m_sum, p_m_sum = sum(v_p_add), sum(p_p_add), sum(v_m_add), sum(p_m_add)
-  v_sum, p_sum = v_p_sum + v_m_sum, p_p_sum + p_m_sum
-  if(v_p_sum + abs(v_m_sum) == 0): v_p_per = 0
-  else: v_p_per = v_p_sum / (v_p_sum + abs(v_m_sum)) * 100
-  if(p_p_sum + abs(p_m_sum) == 0): p_p_per = 0  
-  else: p_p_per = p_p_sum / (p_p_sum + abs(p_m_sum)) * 100
+  v_b_sum, p_b_sum, v_f_sum, p_f_sum = sum(v_b_add), sum(p_b_add), sum(v_f_add), sum(p_f_add)
+  v_sum, p_sum = v_b_sum + v_f_sum, p_b_sum + p_f_sum
+  if(v_sum == 0): v_f_per = 0
+  else: v_f_per = v_f_sum / v_sum * 100
+  if(p_sum == 0): p_f_per = 0
+  else: p_f_per = p_f_sum / p_sum * 100
   if(ord_xnum > ord_nnum):
-    vl_diff = max(c_list[lx-1],o_list[lx-1]) - min(c_list[ln],o_list[ln]) 
-    pl_diff = min(c_list[ln-1],o_list[ln-1]) - max(c_list[0],o_list[0]) 
+    bl_diff = h_list[lx-1] - l_list[ln]
+    fl_diff = l_list[ln-1] - max(h_list[:ln-1])
   else:
-    vl_diff = min(c_list[lx-1],o_list[lx-1]) - max(c_list[ln],o_list[ln])
-    pl_diff = max(c_list[ln+1],o_list[ln+1]) - min(c_list[0],o_list[0])
-  vl_per = abs(vl_diff * v_sum)
-  pl_per = abs(pl_diff * p_sum)
-  if(search_position == 1) and (vl_per < pl_per): order_position = 1
+    bl_diff = l_list[lx-1] - h_list[ln]
+    fl_diff = h_list[ln-1] - min(l_list[:ln-1])
+  vb_per, vf_per = abs(bl_diff * v_b_sum), abs(fl_diff * v_f_sum)
+  pb_per, pf_per = abs(bl_diff * p_b_sum), abs(fl_diff * p_f_sum)
+  v_per, p_per = vf_per / vb_per, pf_per / pb_per
+  if(search_position == 1) and (vb_per < vf_per) and (pb_per < pf_per): order_position = 1
   h_max = max(h_list[:max(ord_xnum, ord_nnum)+1])
   l_min = min(l_list[:max(ord_xnum, ord_nnum)+1])
   hl_diff = h_max - l_min
@@ -639,6 +591,7 @@ while True:
     requests.get(url).json() # this sends the message  max_usdt = live_usdt
     url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'new_item_list:',try_item}"
     requests.get(url).json() # this sends the message
+  check_time1 = check_time1 + 1
 ###############################################################################
 #  while True:
 #-------------------------------------------------------------------------------
@@ -915,14 +868,14 @@ while True:
         i_this_time = int(time.time())
         i_diff_time = i_this_time - i_last_time
         i_rest_time = int(6 - i_diff_time)
-        if(i_rest_time > 0): time.sleep(i_rest_time)
+#        if(i_rest_time > 0): time.sleep(i_rest_time)
 ###############################################################################
     this_time = int(time.time())
     diff_time = this_time - last_time
     rest_time = int(60 - diff_time)
 #    if(rest_time > 0): time.sleep(rest_time)
     check_time = check_time + 1
-    check_time1 = check_time1 + 1
+#    check_time1 = check_time1 + 1
     if(check_time1 >= print_time):
       run_time = int(time.time())
       one_cycle = round((run_time - first_time) / (60 * 60),1)
