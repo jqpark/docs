@@ -215,20 +215,40 @@ def search_calc(sym_bol):
       v_list.append(float(kline[5][i]))
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
+  in_t_list = list(reversed(t_list))
+  in_o_list = list(reversed(o_list))
+  in_h_list = list(reversed(h_list))
+  in_l_list = list(reversed(l_list))
+  in_c_list = list(reversed(c_list))
+  in_v_list = list(reversed(v_list))
+  in_p_list = list(reversed(p_list))
+  in_v_add, in_p_add = [], []
+  in_v_sum, in_p_sum = [], []
+  now_v_sum, now_p_sum = 0, 0
+  for i in range(len(in_c_list)):
+    if(in_h_list[m] == in_l_list[m]): diff_per = 0
+    else: diff_per = (in_c_list[m] - in_o_list[m]) / (in_h_list[m] - in_l_list[m])
+    in_v_calc = v_list[m] * diff_per
+    in_p_calc = p_list[m] * diff_per
+    now_v_sum = now_v_sum + in_v_calc
+    now_p_sum = now_p_sum + in_p_calc
+    in_v_add.append(in_v_calc) 
+    in_p_add.append(in_p_calc) 
+    in_v_sum.append(now_v_sum)
+    in_p_sum.append(now_p_sum)
+
   search_position, order_position = 0, 0
   std_diff = c_list[0] * 0.5 / 5
   min_diff = c_list[0] * 0.5 / 10
-  opn_max, opn_min = max(o_list), min(o_list)
-  cls_max, cls_min = max(c_list), min(c_list)
-  max_diff = max(opn_max, cls_max) - min(opn_min, cls_min)
+  in_v_max, in_v_min = max(in_v_sum), min(in_v_sum)
+  in_p_max, in_p_min = max(in_p_sum), min(in_p_sum)
+  in_v_xnum, in_v_nnum = in_v_sum.index(in_v_max), in_v_sum.index(in_v_min)
+  in_p_xnum, in_p_nnum = in_p_sum.index(in_p_max), in_p_sum.index(in_p_min)
+  max_diff = h_list[in_v_xnum] - l_list[in_v_nnum]
   max_lever = round(c_list[0] * 0.5 / max_diff,2) 
-  if(opn_max > cls_max): new_max, max_num = opn_max, o_list.index(opn_max)
-  else: new_max, max_num = cls_max, c_list.index(cls_max)
-  if(opn_min < cls_min): new_min, min_num = opn_min, o_list.index(opn_min)
-  else: new_min, min_num = cls_min, c_list.index(cls_min)  
-#  new_max, new_min = max(h_list), min(l_list)
-#  max_num, min_num = h_list.index(new_max), l_list.index(new_min)
-  ord_max, ord_min, ord_xnum, ord_nnum = new_max, new_min, max_num, min_num
+  in_new_max, in_new_min = h_list[in_v_xnum], l_list[in_v_nnum]
+  in_max_num, in_min_num = in_v_xnum, in_v_nnum
+  in_ord_max, in_ord_min, in_ord_xnum, in_ord_nnum = in_new_max, in_new_min, in_max_num, in_min_num
   ord_diff, ord_lever = max_diff, max_lever
   for i in range(len(c_list)):
     max_diff = new_max - new_min
@@ -915,13 +935,13 @@ while True:
         i_this_time = int(time.time())
         i_diff_time = i_this_time - i_last_time
         i_rest_time = int(6 - i_diff_time)
-        if(i_rest_time > 0): time.sleep(i_rest_time)
+#        if(i_rest_time > 0): time.sleep(i_rest_time)
 ###############################################################################
     this_time = int(time.time())
     diff_time = this_time - last_time
     rest_time = int(60 - diff_time)
 #    if(rest_time > 0): time.sleep(rest_time)
-#    check_time = check_time + 1
+    check_time = check_time + 1
 #    check_time1 = check_time1 + 1
     if(check_time1 >= print_time):
       run_time = int(time.time())
