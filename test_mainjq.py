@@ -1,4 +1,4 @@
-#v5_test15-3-0_MAIN_JQ_260112-1730
+#v5_test15-3-1_MAIN_JQ_260114-1700
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #telegram update using nest_asyncio
@@ -216,7 +216,7 @@ def search_calc(sym_bol):
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
   cal_lever, order_position = 0, 0
-  std_diff = c_list[0] * 0.5 / 10
+  std_diff = c_list[0] * 0.5 / 5
   for fr in range(1,len(c_list)):
     fr_max = max(h_list[:fr])
     fr_min = min(l_list[:fr])
@@ -225,16 +225,16 @@ def search_calc(sym_bol):
   fr_xnum = h_list[:fr].index(fr_max)
   fr_nnum = l_list[:fr].index(fr_min)
   fr_vol = sum(v_list[:fr])
-  if(fr < len(c_list)-1):
-    for bk in range(fr+1,len(c_list)):
-      bk_max = max(h_list[fr:bk])
-      bk_min = min(l_list[fr:bk])
-      bk_diff = bk_max - bk_min
-      if(bk_diff > fr_diff): break
+  for bk in range(fr,len(v_list)):
+    bk_vol = sum(v_list[fr:bk])
+    if(bk_vol > fr_vol): break
+  if(fr != bk):
+    bk_max = max(h_list[fr:bk])
+    bk_min = min(l_list[fr:bk])
+    bk_diff = bk_max - bk_min
     bk_xnum = h_list[fr:bk].index(bk_max) + fr
     bk_nnum = l_list[fr:bk].index(bk_min) + fr
-    bk_vol = sum(v_list[fr:bk])
-  else:      
+  else:
     bk_vol = sum(v_list)
     bk_max = max(h_list)
     bk_min = min(l_list)
@@ -242,15 +242,13 @@ def search_calc(sym_bol):
     bk_xnum = h_list.index(bk_max)
     bk_nnum = l_list.index(bk_min)
 
-  if(bk_max < fr_max) and (bk_min < fr_min):
+  if(bk_max < fr_max) and (bk_min < fr_min) and (bk_vol > fr_vol):
     cal_lever = round(c_list[0] * 0.5 / abs(c_list[0] - bk_min),2)
-#    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)) and (5 < cal_lever < 10):
-    if(5 < cal_lever < 10):
+    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)) and (5 < cal_lever < 10):
       order_position = 1
-  if(bk_max > fr_max) and (bk_min > fr_min):
+  if(bk_max > fr_max) and (bk_min > fr_min) and (bk_vol > fr_vol):
     cal_lever = round(c_list[0] * 0.5 / abs(bk_max - c_list[0]),2)
-#    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)) and (5 < cal_lever < 10):
-    if(5 < cal_lever < 10):
+    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)) and (5 < cal_lever < 10):
       order_position = 2
   print(sym_bol, order_position, cal_lever)
 #-------------------------------------------------------------------------------
@@ -284,7 +282,8 @@ def order_calc(order_value):
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
   cal_lever, order_position = 0, 0
-  std_diff = c_list[0] * 0.5 / 10
+  std_diff = c_list[0] * 0.5 / 5
+  limit_diff = std_diff
   for fr in range(1,len(c_list)):
     fr_max = max(h_list[:fr])
     fr_min = min(l_list[:fr])
@@ -293,16 +292,16 @@ def order_calc(order_value):
   fr_xnum = h_list[:fr].index(fr_max)
   fr_nnum = l_list[:fr].index(fr_min)
   fr_vol = sum(v_list[:fr])
-  if(fr < len(c_list)-1):
-    for bk in range(fr+1,len(c_list)):
-      bk_max = max(h_list[fr:bk])
-      bk_min = min(l_list[fr:bk])
-      bk_diff = bk_max - bk_min
-      if(bk_diff > fr_diff): break
+  for bk in range(fr,len(v_list)):
+    bk_vol = sum(v_list[fr:bk])
+    if(bk_vol > fr_vol): break
+  if(fr != bk):
+    bk_max = max(h_list[fr:bk])
+    bk_min = min(l_list[fr:bk])
+    bk_diff = bk_max - bk_min
     bk_xnum = h_list[fr:bk].index(bk_max) + fr
     bk_nnum = l_list[fr:bk].index(bk_min) + fr
-    bk_vol = sum(v_list[fr:bk])
-  else:      
+  else:
     bk_vol = sum(v_list)
     bk_max = max(h_list)
     bk_min = min(l_list)
@@ -311,16 +310,21 @@ def order_calc(order_value):
     bk_nnum = l_list.index(bk_min)
 
   if(bk_max < fr_max) and (bk_min < fr_min):
-    cal_lever = round(c_list[0] * 0.5 / abs(c_list[0] - bk_min),2)
-#    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)) and (5 < cal_lever < 10):
-    if(5 < cal_lever < 10):
+    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)): order_position = 5
+    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)): order_position = 3
+    limit_diff = abs(c_list[0] - bk_min)
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)) and (5 < cal_lever < 10) and (bk_vol > fr_vol):
       order_position = 1
   if(bk_max > fr_max) and (bk_min > fr_min):
-    cal_lever = round(c_list[0] * 0.5 / abs(bk_max - c_list[0]),2)
-#    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)) and (5 < cal_lever < 10):
-    if(5 < cal_lever < 10):
+    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)): order_position = 6
+    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)): order_position = 4
+    limit_diff = abs(bk_max - c_list[0])
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)) and (5 < cal_lever < 10) and (bk_vol > fr_vol):
       order_position = 2
 
+  
   if(fr_max > bk_max): ord_max, ord_xnum = fr_max, fr_xnum
   else: ord_max, ord_xnum = bk_max, bk_xnum
   if(fr_min < bk_min): ord_min, ord_nnum = fr_min, fr_nnum
@@ -458,7 +462,7 @@ while True:
   for i in range(len(rest_list)):
       try_item.append(rest_list[i])
 
-
+  
 #rest_item = try_item.copy()
 #-------------------------------------------------------------------------------
 #  first_time = int(time.time())
@@ -716,13 +720,13 @@ while True:
           s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-#        if(value_s_list[item_no][0] == 1) and (m_order_idx[1] == 1):
-#            if(m_order_tp[1] != float(l_order_price)):
-#              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+        if(value_s_list[item_no][0] == 1) and (m_order_idx[1] == 1):
+            if(m_order_tp[1] != float(l_order_price)):
+              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
 
-#        if(value_s_list[item_no][0] == 2) and (m_order_idx[2] == 2):
-#            if(m_order_tp[2] != float(s_order_price)):
-#              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+        if(value_s_list[item_no][0] == 2) and (m_order_idx[2] == 2):
+            if(m_order_tp[2] != float(s_order_price)):
+              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
 #------------------------------------------------------------------------------- 
 #-------------------------------------------------------------------------------
         if(value_s_list[item_no][0] != 0) and (value_s_list[item_no][1] > sym_price > value_s_list[item_no][2]):
@@ -766,22 +770,22 @@ while True:
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
-          if(float(l_unpnl) > (invest_usdt * 0.1)) and (value_s_list[item_no][0] not in (1, 3)):
+          if(value_s_list[item_no][0] in (2, 4, 6)):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
             order_condition[item_no] = 'PF_L_closed'
-            opened_order_info = [sym_bol, order_condition[item_no], round(float(l_unpnl),2)]
+            opened_order_info = [sym_bol, value_s_list[item_no][0], order_condition[item_no], round(float(l_unpnl),2)]
             url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
             requests.get(url).json() # this sends the message
 
-        if(long_qty != 0) and (short_qty != 0):
-          if(float(s_unpnl) > (invest_usdt * 0.1)) and (value_s_list[item_no][0] not in (2, 4)):
+        if(short_qty != 0):
+          if(value_s_list[item_no][0] in (1, 3, 5)):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
             order_condition[item_no] = 'PF_S_closed'
-            opened_order_info = [sym_bol, order_condition[item_no], round(float(s_unpnl),2)]
+            opened_order_info = [sym_bol, value_s_list[item_no][0], order_condition[item_no], round(float(s_unpnl),2)]
             url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
             requests.get(url).json() # this sends the message
 #-------------------------------------------------------------------------------
