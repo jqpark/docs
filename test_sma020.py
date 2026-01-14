@@ -762,7 +762,7 @@ while True:
 #-------------------------------------------------------------------------------
         if(value_s_list[item_no][0] != 0) and (value_s_list[item_no][1] > sym_price > value_s_list[item_no][2]):
 #-------------------------------------------------------------------------------
-          if(value_s_list[item_no][0] == 1):
+          if(value_s_list[item_no][0] in (1, 3)):
             if(long_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
                 if(float(max_lever) >= float(l_sym_lever)) and (m_order_idx[1] == 0):
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
@@ -771,7 +771,7 @@ while True:
                     order_market_part(add_order)
                     time.sleep(1)
 
-          if(value_s_list[item_no][0] == 2):
+          if(value_s_list[item_no][0] in (2, 4)):
             if(short_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
                 if(float(max_lever) >= float(s_sym_lever)) and (m_order_idx[2] == 0):
                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
