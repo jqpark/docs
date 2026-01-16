@@ -827,7 +827,7 @@ while True:
             closed_order_part(add_order)
             time.sleep(1)
             order_condition[item_no] = 'L_closed'
-            opened_order_info = [sym_bol, value_s_list[item_no][0], order_condition[item_no], round(float(l_unpnl),2)]
+            opened_order_info = [sym_bol, order_condition[item_no], round(float(l_unpnl),2), value_s_list[item_no]]
             url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
             requests.get(url).json() # this sends the message
 
@@ -837,7 +837,7 @@ while True:
             closed_order_part(add_order)
             time.sleep(1)
             order_condition[item_no] = 'S_closed'
-            opened_order_info = [sym_bol, value_s_list[item_no][0], order_condition[item_no], round(float(s_unpnl),2)]
+            opened_order_info = [sym_bol, order_condition[item_no], round(float(s_unpnl),2), value_s_list[item_no]]
             url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
             requests.get(url).json() # this sends the message
 #-------------------------------------------------------------------------------
