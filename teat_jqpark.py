@@ -1,4 +1,4 @@
-#v5_test15-2-0_JQPARK_260109-1700
+#v5_test15-3-1_JQPARK_260122-1700
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #telegram update using nest_asyncio
@@ -199,14 +199,15 @@ def set_trading_stop_item(add_order):
 ################################################################################
 ################################################################################
 def search_calc(sym_bol):
-  itv = 3
+  itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720, "D", "W", "M"]
+  for itv in itv_list:
 #-------------------------------------------------------------------------------
-  get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
-  time.sleep(1)
-  kline = pd.DataFrame(get_kline)
+    get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
+    time.sleep(1)
+    kline = pd.DataFrame(get_kline)
 
-  t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
-  for i in range(len(kline[0])):
+    t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
+    for i in range(len(kline[0])):
       t_list.append(int(kline[0][i]))
       o_list.append(float(kline[1][i]))
       h_list.append(float(kline[2][i]))
@@ -215,43 +216,74 @@ def search_calc(sym_bol):
       v_list.append(float(kline[5][i]))
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
-  cal_lever, order_position = 0, 0
-  std_diff = c_list[0] * 0.5 / 5
-  for fr in range(1,len(c_list)):
-    fr_max = max(h_list[:fr])
-    fr_min = min(l_list[:fr])
-    fr_diff = fr_max - fr_min
-    if(fr_diff > std_diff): break
-  fr_xnum = h_list[:fr].index(fr_max)
-  fr_nnum = l_list[:fr].index(fr_min)
-  fr_vol = sum(v_list[:fr])
-  for bk in range(fr,len(v_list)):
-    bk_vol = sum(v_list[fr:bk])
+    cal_lever, order_position = 0, 0
+    std_diff = c_list[0] * 0.5 / 5
+    limit_diff = std_diff
+    for fr in range(1,len(c_list)):
+      fr_max = max(h_list[:fr])
+      fr_min = min(l_list[:fr])
+      fr_diff = fr_max - fr_min
+      if(fr_diff > std_diff): break
+    fr_xnum = h_list[:fr].index(fr_max)
+    fr_nnum = l_list[:fr].index(fr_min)
+    fr_vol = sum(v_list[1:fr])
+    for bk in range(fr,len(v_list)):
+      bk_vol = sum(v_list[fr:bk])
+      if(bk_vol > fr_vol): break
+    if(fr != bk):
+      bk_max = max(h_list[fr:bk])
+      bk_min = min(l_list[fr:bk])
+      bk_diff = bk_max - bk_min
+      bk_xnum = h_list[fr:bk].index(bk_max) + fr
+      bk_nnum = l_list[fr:bk].index(bk_min) + fr
+    else:
+      bk_vol = sum(v_list)
+      bk_max = max(h_list)
+      bk_min = min(l_list)
+      bk_diff = bk_max - bk_min
+      bk_xnum = h_list.index(bk_max)
+      bk_nnum = l_list.index(bk_min)
     if(bk_vol > fr_vol): break
-  if(fr != bk):
-    bk_max = max(h_list[fr:bk])
-    bk_min = min(l_list[fr:bk])
-    bk_diff = bk_max - bk_min
-    bk_xnum = h_list[fr:bk].index(bk_max) + fr
-    bk_nnum = l_list[fr:bk].index(bk_min) + fr
-  else:
-    bk_vol = sum(v_list)
-    bk_max = max(h_list)
-    bk_min = min(l_list)
-    bk_diff = bk_max - bk_min
-    bk_xnum = h_list.index(bk_max)
-    bk_nnum = l_list.index(bk_min)
+    else: time.sleep(1) 
 
-  if(bk_max < fr_max) and (bk_min < fr_min):
-    cal_lever = round(c_list[0] * 0.5 / abs(c_list[0] - bk_min),2)
-    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)) and (5 < cal_lever < 10):
-      order_position = 1
-  if(bk_max > fr_max) and (bk_min > fr_min):
-    cal_lever = round(c_list[0] * 0.5 / abs(bk_max - c_list[0]),2)
-    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)) and (5 < cal_lever < 10):
-      order_position = 2
+  if(bk_max < fr_max) and (bk_min <= fr_min):
+    order_position = 5
+    limit_diff = abs(c_list[0] - bk_min)
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    if(abs(bk_max - c_list[0]) > abs(bk_min - fr_min)):
+      if(5 <= cal_lever <= 10): order_position = 1
+      if(cal_lever < 5): order_position = 11
+      if(cal_lever > 10): order_position = 10
+    if(abs(bk_max - c_list[0]) < abs(bk_min - fr_min)):
+      if(5 <= cal_lever <= 10): order_position = 3
+      if(cal_lever < 5): order_position = 31
+      if(cal_lever > 10): order_position = 30
+    if(bk_max > c_list[0]): order_position = 77
+        
+  if(bk_max >= fr_max) and (bk_min > fr_min):
+    order_position = 6
+    limit_diff = abs(bk_max - c_list[0])
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    if(abs(bk_max - fr_max) < abs(bk_min - c_list[0])):
+      if(5 <= cal_lever <= 10): order_position = 2
+      if(cal_lever < 5): order_position = 21
+      if(cal_lever > 10): order_position = 20
+    if(abs(bk_max - fr_max) > abs(bk_min - c_list[0])):
+      if(5 <= cal_lever <= 10): order_position = 4
+      if(cal_lever < 5): order_position = 41
+      if(cal_lever > 10): order_position = 40
+    if(bk_min < c_list[0]): order_position = 88
+
+  if(bk_max >= fr_max) and (bk_min <= fr_min):
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    order_position = 91
+  if(bk_max <= fr_max) and (bk_min >= fr_min):
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    order_position = 90
+
   print(sym_bol, order_position, cal_lever)
 #-------------------------------------------------------------------------------
+  time.sleep(1)
   return(order_position)
 #-------------------------------------------------------------------------------
 ###############################################################################
@@ -259,20 +291,22 @@ def search_calc(sym_bol):
 #        order_value = [sym_bol, sym_price, order_condition[item_no], limit_diff_p[item_no],
 #                       value_s_list[item_no], value_v_list[item_no]]
 def order_calc(order_value):
-  itv = 3
   sym_bol = order_value[0]
   sym_price = order_value[1]
   open_order_condition = order_value[2]
   limit_diff = order_value[3]
   s_value_list = order_value[4]
   v_value_list = order_value[5]
+#  itv = 3
+  itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720, "D", "W", "M"]
+  for itv in itv_list:
 #-------------------------------------------------------------------------------
-  get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
-  time.sleep(1)
-  kline = pd.DataFrame(get_kline)
+    get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
+    time.sleep(1)
+    kline = pd.DataFrame(get_kline)
 
-  t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
-  for i in range(len(kline[0])):
+    t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
+    for i in range(len(kline[0])):
       t_list.append(int(kline[0][i]))
       o_list.append(float(kline[1][i]))
       h_list.append(float(kline[2][i]))
@@ -281,45 +315,70 @@ def order_calc(order_value):
       v_list.append(float(kline[5][i]))
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
-  cal_lever, order_position = 0, 0
-  std_diff = c_list[0] * 0.5 / 5
-  limit_diff = std_diff
-  for fr in range(1,len(c_list)):
-    fr_max = max(h_list[:fr])
-    fr_min = min(l_list[:fr])
-    fr_diff = fr_max - fr_min
-    if(fr_diff > std_diff): break
-  fr_xnum = h_list[:fr].index(fr_max)
-  fr_nnum = l_list[:fr].index(fr_min)
-  fr_vol = sum(v_list[:fr])
-  for bk in range(fr,len(v_list)):
-    bk_vol = sum(v_list[fr:bk])
+    cal_lever, order_position = 0, 0
+    std_diff = c_list[0] * 0.5 / 5
+    limit_diff = std_diff
+    for fr in range(1,len(c_list)):
+      fr_max = max(h_list[:fr])
+      fr_min = min(l_list[:fr])
+      fr_diff = fr_max - fr_min
+      if(fr_diff > std_diff): break
+    fr_xnum = h_list[:fr].index(fr_max)
+    fr_nnum = l_list[:fr].index(fr_min)
+    fr_vol = sum(v_list[1:fr])
+    for bk in range(fr,len(v_list)):
+      bk_vol = sum(v_list[fr:bk])
+      if(bk_vol > fr_vol): break
+    if(fr != bk):
+      bk_max = max(h_list[fr:bk])
+      bk_min = min(l_list[fr:bk])
+      bk_diff = bk_max - bk_min
+      bk_xnum = h_list[fr:bk].index(bk_max) + fr
+      bk_nnum = l_list[fr:bk].index(bk_min) + fr
+    else:
+      bk_vol = sum(v_list)
+      bk_max = max(h_list)
+      bk_min = min(l_list)
+      bk_diff = bk_max - bk_min
+      bk_xnum = h_list.index(bk_max)
+      bk_nnum = l_list.index(bk_min)
     if(bk_vol > fr_vol): break
-  if(fr != bk):
-    bk_max = max(h_list[fr:bk])
-    bk_min = min(l_list[fr:bk])
-    bk_diff = bk_max - bk_min
-    bk_xnum = h_list[fr:bk].index(bk_max) + fr
-    bk_nnum = l_list[fr:bk].index(bk_min) + fr
-  else:
-    bk_vol = sum(v_list)
-    bk_max = max(h_list)
-    bk_min = min(l_list)
-    bk_diff = bk_max - bk_min
-    bk_xnum = h_list.index(bk_max)
-    bk_nnum = l_list.index(bk_min)
+    else: time.sleep(1) 
 
-  if(bk_max < fr_max) and (bk_min < fr_min):
+  if(bk_max < fr_max) and (bk_min <= fr_min):
+    order_position = 5
     limit_diff = abs(c_list[0] - bk_min)
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)) and (5 < cal_lever < 10):
-      order_position = 1
-  if(bk_max > fr_max) and (bk_min > fr_min):
+    if(abs(bk_max - c_list[0]) > abs(bk_min - fr_min)):
+      if(5 <= cal_lever <= 10): order_position = 1
+      if(cal_lever < 5): order_position = 11
+      if(cal_lever > 10): order_position = 10
+    if(abs(bk_max - c_list[0]) < abs(bk_min - fr_min)):
+      if(5 <= cal_lever <= 10): order_position = 3
+      if(cal_lever < 5): order_position = 31
+      if(cal_lever > 10): order_position = 30
+    if(bk_max > c_list[0]): order_position = 77
+        
+  if(bk_max >= fr_max) and (bk_min > fr_min):
+    order_position = 6
     limit_diff = abs(bk_max - c_list[0])
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)) and (5 < cal_lever < 10):
-      order_position = 2
+    if(abs(bk_max - fr_max) < abs(bk_min - c_list[0])):
+      if(5 <= cal_lever <= 10): order_position = 2
+      if(cal_lever < 5): order_position = 21
+      if(cal_lever > 10): order_position = 20
+    if(abs(bk_max - fr_max) > abs(bk_min - c_list[0])):
+      if(5 <= cal_lever <= 10): order_position = 4
+      if(cal_lever < 5): order_position = 41
+      if(cal_lever > 10): order_position = 40
+    if(bk_min < c_list[0]): order_position = 88
 
+  if(bk_max >= fr_max) and (bk_min <= fr_min):
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    order_position = 91
+  if(bk_max <= fr_max) and (bk_min >= fr_min):
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    order_position = 90
   
   if(fr_max > bk_max): ord_max, ord_xnum = fr_max, fr_xnum
   else: ord_max, ord_xnum = bk_max, bk_xnum
@@ -332,6 +391,7 @@ def order_calc(order_value):
   s_value_list = [order_position, ord_max, ord_min, cal_lever]
   v_value_list = [mx_server_time, mn_server_time]
 #-------------------------------------------------------------------------------
+  time.sleep(1)
   order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
   return(order_return)
 #-------------------------------------------------------------------------------
@@ -464,9 +524,9 @@ while True:
 #  first_time = int(time.time())
 #-------------------------------------------------------------------------------
 # add item list
-  ordered_item = 10
+  ordered_item = 100
   #wish_item_no = 15
-  wish_item_no = 10
+  wish_item_no = 100
   if(wish_item_no > len(try_item)):
     tickers = session.get_tickers(category="linear")['result']['list']
     symbol_list = (pd.DataFrame(tickers)['symbol'])
@@ -486,7 +546,7 @@ while True:
     for sym_bol in added_symbols:
       if(len(try_item) >= wish_item_no): break
       search_calc_result = search_calc(sym_bol)
-      if(search_calc_result != 0): try_item.append(sym_bol)
+      if(search_calc_result in (1, 2)): try_item.append(sym_bol)
 #-------------------------------------------------------------------------------    
 #    for i in range(len(added_symbols)):
 #      if(len(try_item) >= wish_item_no): break
@@ -657,7 +717,7 @@ while True:
 # calc_return = [sym_bol, l_new_lever, s_new_lever]
         calc_result = calc_part(order_condition[item_no], sym_bol, h_price, l_price, limit_diff_p[item_no])
 #-------------------------------------------------------------------------------
-        if(float(max_lever) >= max(float(calc_result[1]), float(calc_result[2]))) and (value_s_list[item_no][0] != 0):  
+        if(float(max_lever) >= max(float(calc_result[1]), float(calc_result[2]))) and (value_s_list[item_no][0] in (1, 2)):  
           if(long_qty == 0) and (short_qty == 0):
             if(float(calc_result[1]) != float(l_sym_lever)) or (float(calc_result[2]) != float(s_sym_lever)):
               session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=calc_result[2])
@@ -728,7 +788,7 @@ while True:
         if(value_s_list[item_no][0] != 0) and (value_s_list[item_no][1] > sym_price > value_s_list[item_no][2]):
 #-------------------------------------------------------------------------------
           if(value_s_list[item_no][0] == 1):
-            if(long_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
+            if(long_qty == 0) and ((invest_usdt * 1) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
                 if(float(max_lever) >= float(l_sym_lever)) and (m_order_idx[1] == 0):
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price]
@@ -737,7 +797,7 @@ while True:
                     time.sleep(1)
 
           if(value_s_list[item_no][0] == 2):
-            if(short_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
+            if(short_qty == 0) and ((invest_usdt * 1) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
                 if(float(max_lever) >= float(s_sym_lever)) and (m_order_idx[2] == 0):
                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price]                  
@@ -766,24 +826,44 @@ while True:
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
-          if(float(l_unpnl) > 0) and (sym_price < value_s_list[item_no][2]):
+          if(value_s_list[item_no][0] in (2, 20, 21, 4, 40, 41, 6)) and (float(l_unpnl) > 0):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
-            order_condition[item_no] = 'PF_L_closed'
-            opened_order_info = [sym_bol, order_condition[item_no], round(float(l_unpnl),2)]
+            order_condition[item_no] = 'L_closed'
+            opened_order_info = [sym_bol, order_condition[item_no], round(float(l_unpnl),2), value_s_list[item_no]]
             url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
             requests.get(url).json() # this sends the message
 
-        if(long_qty != 0) and (short_qty != 0):
-          if(float(s_unpnl) > 0) and (sym_price > value_s_list[item_no][1]):
+        if(short_qty != 0):
+          if(value_s_list[item_no][0] in (1, 10, 11, 3, 30, 31, 5)) and (float(s_unpnl) > 0):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
-            order_condition[item_no] = 'PF_S_closed'
-            opened_order_info = [sym_bol, order_condition[item_no], round(float(s_unpnl),2)]
+            order_condition[item_no] = 'S_closed'
+            opened_order_info = [sym_bol, order_condition[item_no], round(float(s_unpnl),2), value_s_list[item_no]]
             url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
             requests.get(url).json() # this sends the message
+#-------------------------------------------------------------------------------
+#        if(long_qty != 0):
+#          if(value_s_list[item_no][0] in (91, 77)) and (float(l_unpnl) > (invest_usdt * 0.1)):
+#            add_order = [sym_bol, "Sell", 1]
+#            closed_order_part(add_order)
+#            time.sleep(1)
+#            order_condition[item_no] = 'PF_L_closed'
+#            opened_order_info = [sym_bol, order_condition[item_no], round(float(l_unpnl),2), value_s_list[item_no]]
+#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
+#            requests.get(url).json() # this sends the message
+
+#        if(short_qty != 0):
+#          if(value_s_list[item_no][0] in (91, 88)) and (float(s_unpnl) > (invest_usdt * 0.1)):
+#            add_order = [sym_bol, "Buy", 2]
+#            closed_order_part(add_order)
+#            time.sleep(1)
+#            order_condition[item_no] = 'PF_S_closed'
+#            opened_order_info = [sym_bol, order_condition[item_no], round(float(s_unpnl),2), value_s_list[item_no]]
+#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
+#            requests.get(url).json() # this sends the message
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
           if(float(l_position_im) > (invest_usdt * 1.5)):
