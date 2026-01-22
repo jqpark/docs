@@ -217,6 +217,7 @@ def search_calc(sym_bol):
 #-------------------------------------------------------------------------------
   cal_lever, order_position = 0, 0
   std_diff = (c_list[0] * 0.5 / 10) * 2
+  limit_diff = std_diff
   upp_max, low_min = max(h_list), min(l_list)
   max_diff = upp_max - low_min
   xnum = h_list.index(upp_max)
@@ -326,6 +327,7 @@ def order_calc(order_value):
 #-------------------------------------------------------------------------------
   cal_lever, order_position = 0, 0
   std_diff = (c_list[0] * 0.5 / 10) * 2
+  limit_diff = std_diff
   upp_max, low_min = max(h_list), min(l_list)
   max_diff = upp_max - low_min
   xnum = h_list.index(upp_max)
