@@ -1,4 +1,4 @@
-#v5_test15-3-2_MAIN_JQ_260119-1730
+#v5_test15-3-3_MAIN_JQ_260122-1700
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #telegram update using nest_asyncio
@@ -199,7 +199,7 @@ def set_trading_stop_item(add_order):
 ################################################################################
 ################################################################################
 def search_calc(sym_bol):
-  itv_list = [3, 5 ,10, 15, 30, 60, 120, 240, 360, 720, "D", "W", "M"]
+  itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720, "D", "W", "M"]
   for itv in itv_list:
 #-------------------------------------------------------------------------------
     get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
@@ -247,27 +247,33 @@ def search_calc(sym_bol):
     else: time.sleep(1) 
 
   if(bk_max < fr_max) and (bk_min <= fr_min):
+    order_position = 5
     limit_diff = abs(c_list[0] - bk_min)
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)):
+    if(abs(bk_max - c_list[0]) > abs(bk_min - fr_min)):
       if(5 <= cal_lever <= 10): order_position = 1
       if(cal_lever < 5): order_position = 11
       if(cal_lever > 10): order_position = 10
-    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)):
+    if(abs(bk_max - c_list[0]) < abs(bk_min - fr_min)):
       if(5 <= cal_lever <= 10): order_position = 3
       if(cal_lever < 5): order_position = 31
       if(cal_lever > 10): order_position = 30
+    if(bk_max > c_list[0]): order_position = 77
+        
   if(bk_max >= fr_max) and (bk_min > fr_min):
+    order_position = 6
     limit_diff = abs(bk_max - c_list[0])
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)):
+    if(abs(bk_max - fr_max) < abs(bk_min - c_list[0])):
       if(5 <= cal_lever <= 10): order_position = 2
       if(cal_lever < 5): order_position = 21
       if(cal_lever > 10): order_position = 20
-    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)):
+    if(abs(bk_max - fr_max) > abs(bk_min - c_list[0])):
       if(5 <= cal_lever <= 10): order_position = 4
       if(cal_lever < 5): order_position = 41
       if(cal_lever > 10): order_position = 40
+    if(bk_min < c_list[0]): order_position = 88
+
   if(bk_max >= fr_max) and (bk_min <= fr_min):
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
     order_position = 91
@@ -292,7 +298,7 @@ def order_calc(order_value):
   s_value_list = order_value[4]
   v_value_list = order_value[5]
 #  itv = 3
-  itv_list = [3, 5 ,10, 15, 30, 60, 120, 240, 360, 720, "D", "W", "M"]
+  itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720, "D", "W", "M"]
   for itv in itv_list:
 #-------------------------------------------------------------------------------
     get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
@@ -340,27 +346,33 @@ def order_calc(order_value):
     else: time.sleep(1) 
 
   if(bk_max < fr_max) and (bk_min <= fr_min):
+    order_position = 5
     limit_diff = abs(c_list[0] - bk_min)
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)):
+    if(abs(bk_max - c_list[0]) > abs(bk_min - fr_min)):
       if(5 <= cal_lever <= 10): order_position = 1
       if(cal_lever < 5): order_position = 11
       if(cal_lever > 10): order_position = 10
-    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)):
+    if(abs(bk_max - c_list[0]) < abs(bk_min - fr_min)):
       if(5 <= cal_lever <= 10): order_position = 3
       if(cal_lever < 5): order_position = 31
       if(cal_lever > 10): order_position = 30
+    if(bk_max > c_list[0]): order_position = 77
+        
   if(bk_max >= fr_max) and (bk_min > fr_min):
+    order_position = 6
     limit_diff = abs(bk_max - c_list[0])
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)):
+    if(abs(bk_max - fr_max) < abs(bk_min - c_list[0])):
       if(5 <= cal_lever <= 10): order_position = 2
       if(cal_lever < 5): order_position = 21
       if(cal_lever > 10): order_position = 20
-    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)):
+    if(abs(bk_max - fr_max) > abs(bk_min - c_list[0])):
       if(5 <= cal_lever <= 10): order_position = 4
       if(cal_lever < 5): order_position = 41
       if(cal_lever > 10): order_position = 40
+    if(bk_min < c_list[0]): order_position = 88
+
   if(bk_max >= fr_max) and (bk_min <= fr_min):
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
     order_position = 91
@@ -512,9 +524,9 @@ while True:
 #  first_time = int(time.time())
 #-------------------------------------------------------------------------------
 # add item list
-  ordered_item = 10
+  ordered_item = 100
   #wish_item_no = 15
-  wish_item_no = 10
+  wish_item_no = 100
   if(wish_item_no > len(try_item)):
     tickers = session.get_tickers(category="linear")['result']['list']
     symbol_list = (pd.DataFrame(tickers)['symbol'])
@@ -532,7 +544,7 @@ while True:
     added_symbols = [x for x in added_symbols if 'USDT' in x]
 #-------------------------------------------------------------------------------
     for sym_bol in added_symbols:
-#      if(len(try_item) >= wish_item_no): break
+      if(len(try_item) >= wish_item_no): break
       search_calc_result = search_calc(sym_bol)
       if(search_calc_result in (1, 2)): try_item.append(sym_bol)
 #-------------------------------------------------------------------------------    
@@ -814,7 +826,7 @@ while True:
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
-          if(value_s_list[item_no][0] in (2, 21, 4, 41)):
+          if(value_s_list[item_no][0] in (2, 20, 21, 4, 40, 41, 6)):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
@@ -824,7 +836,7 @@ while True:
             requests.get(url).json() # this sends the message
 
         if(short_qty != 0):
-          if(value_s_list[item_no][0] in (1, 11, 3, 31)):
+          if(value_s_list[item_no][0] in (1, 10, 11, 3, 30, 31, 5)):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
@@ -834,7 +846,7 @@ while True:
             requests.get(url).json() # this sends the message
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
-          if(value_s_list[item_no][0] == 91) and (float(l_unpnl) > (invest_usdt * 0.1)):
+          if(value_s_list[item_no][0] in (91, 77)) and (float(l_unpnl) > (invest_usdt * 0.1)):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
@@ -844,7 +856,7 @@ while True:
             requests.get(url).json() # this sends the message
 
         if(short_qty != 0):
-          if(value_s_list[item_no][0] == 91) and (float(s_unpnl) > (invest_usdt * 0.1)):
+          if(value_s_list[item_no][0] in (91, 88)) and (float(s_unpnl) > (invest_usdt * 0.1)):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
