@@ -1,4 +1,4 @@
-#v5_test15-3-2_SMA020_260116-1700
+#v5_test15-3-3_SMA020_260122-1730
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #telegram update using nest_asyncio
@@ -257,22 +257,40 @@ def search_calc(sym_bol):
     fr_xnum, bk_xnum = h_list.index(upp_max), h_list.index(upp_max)
     fr_nnum, bk_nnum = l_list.index(low_min), l_list.index(low_min)
 
-  if(bk_max < fr_max) and (bk_min < fr_min) and (min(fr_vol, bk_vol) > std_vol):
-      cal_lever = round(c_list[0] * 0.5 / abs(c_list[0] - bk_min),2)
-      if(abs(bk_max - fr_max) > abs(bk_min - fr_min)):
-        order_position = 3
-        if(5 < cal_lever < 10): order_position = 1
-      if(abs(bk_max - fr_max) < abs(bk_min - fr_min)):
-        order_position = 7
-        if(5 < cal_lever < 10): order_position = 5
-  if(bk_max > fr_max) and (bk_min > fr_min) and (min(fr_vol, bk_vol) > std_vol):
-      cal_lever = round(c_list[0] * 0.5 / abs(bk_max - c_list[0]),2)
-      if(abs(bk_max - fr_max) < abs(bk_min - fr_min)):
-        order_position = 4
-        if(5 < cal_lever < 10): order_position = 2
-      if(abs(bk_max - fr_max) > abs(bk_min - fr_min)):
-        order_position = 8
-        if(5 < cal_lever < 10): order_position = 6
+  if(bk_max < fr_max) and (bk_min <= fr_min) and (min(fr_vol, bk_vol) > std_vol):
+    order_position = 5
+    limit_diff = abs(c_list[0] - bk_min)
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    if(abs(bk_max - c_list[0]) > abs(bk_min - fr_min)):
+      if(5 <= cal_lever <= 10): order_position = 1
+      if(cal_lever < 5): order_position = 11
+      if(cal_lever > 10): order_position = 10
+    if(abs(bk_max - c_list[0]) < abs(bk_min - fr_min)):
+      if(5 <= cal_lever <= 10): order_position = 3
+      if(cal_lever < 5): order_position = 31
+      if(cal_lever > 10): order_position = 30
+    if(bk_max > c_list[0]): order_position = 77
+        
+  if(bk_max >= fr_max) and (bk_min > fr_min) and (min(fr_vol, bk_vol) > std_vol):
+    order_position = 6
+    limit_diff = abs(bk_max - c_list[0])
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    if(abs(bk_max - fr_max) < abs(bk_min - c_list[0])):
+      if(5 <= cal_lever <= 10): order_position = 2
+      if(cal_lever < 5): order_position = 21
+      if(cal_lever > 10): order_position = 20
+    if(abs(bk_max - fr_max) > abs(bk_min - c_list[0])):
+      if(5 <= cal_lever <= 10): order_position = 4
+      if(cal_lever < 5): order_position = 41
+      if(cal_lever > 10): order_position = 40
+    if(bk_min < c_list[0]): order_position = 88
+
+  if(bk_max >= fr_max) and (bk_min <= fr_min) and (min(fr_vol, bk_vol) > std_vol):
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    order_position = 91
+  if(bk_max <= fr_max) and (bk_min >= fr_min) and (min(fr_vol, bk_vol) > std_vol):
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    order_position = 90
         
   print(sym_bol, order_position, cal_lever)
 #-------------------------------------------------------------------------------
@@ -348,26 +366,40 @@ def order_calc(order_value):
     fr_xnum, bk_xnum = h_list.index(upp_max), h_list.index(upp_max)
     fr_nnum, bk_nnum = l_list.index(low_min), l_list.index(low_min)
 
-  if(bk_max < fr_max) and (bk_min < fr_min) and (min(fr_vol, bk_vol) > std_vol):
+  if(bk_max < fr_max) and (bk_min <= fr_min) and (min(fr_vol, bk_vol) > std_vol):
+    order_position = 5
     limit_diff = abs(c_list[0] - bk_min)
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)):
-      order_position = 3
-      if(5 < cal_lever < 10): order_position = 1
-    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)):
-      order_position = 7
-      if(5 < cal_lever < 10): order_position = 5
-
-  if(bk_max > fr_max) and (bk_min > fr_min) and (min(fr_vol, bk_vol) > std_vol):
+    if(abs(bk_max - c_list[0]) > abs(bk_min - fr_min)):
+      if(5 <= cal_lever <= 10): order_position = 1
+      if(cal_lever < 5): order_position = 11
+      if(cal_lever > 10): order_position = 10
+    if(abs(bk_max - c_list[0]) < abs(bk_min - fr_min)):
+      if(5 <= cal_lever <= 10): order_position = 3
+      if(cal_lever < 5): order_position = 31
+      if(cal_lever > 10): order_position = 30
+    if(bk_max > c_list[0]): order_position = 77
+        
+  if(bk_max >= fr_max) and (bk_min > fr_min) and (min(fr_vol, bk_vol) > std_vol):
+    order_position = 6
     limit_diff = abs(bk_max - c_list[0])
     cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) < abs(bk_min - fr_min)):
-      order_position = 4
-      if(5 < cal_lever < 10): order_position = 2
-    if(abs(bk_max - fr_max) > abs(bk_min - fr_min)):
-      order_position = 8
-      if(5 < cal_lever < 10): order_position = 6
-  if(bk_max > fr_max) and (bk_min < fr_min) and (min(fr_vol, bk_vol) > std_vol): order_position = 9
+    if(abs(bk_max - fr_max) < abs(bk_min - c_list[0])):
+      if(5 <= cal_lever <= 10): order_position = 2
+      if(cal_lever < 5): order_position = 21
+      if(cal_lever > 10): order_position = 20
+    if(abs(bk_max - fr_max) > abs(bk_min - c_list[0])):
+      if(5 <= cal_lever <= 10): order_position = 4
+      if(cal_lever < 5): order_position = 41
+      if(cal_lever > 10): order_position = 40
+    if(bk_min < c_list[0]): order_position = 88
+
+  if(bk_max >= fr_max) and (bk_min <= fr_min) and (min(fr_vol, bk_vol) > std_vol):
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    order_position = 91
+  if(bk_max <= fr_max) and (bk_min >= fr_min) and (min(fr_vol, bk_vol) > std_vol):
+    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
+    order_position = 90
 
   if(fr_max > bk_max): ord_max, ord_xnum = fr_max, fr_xnum
   else: ord_max, ord_xnum = bk_max, bk_xnum
@@ -823,7 +855,7 @@ while True:
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
-          if(value_s_list[item_no][0] in (2, 4, 6, 8)):
+          if(value_s_list[item_no][0] in (2, 20, 21, 4, 40, 41, 6)):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
@@ -833,7 +865,7 @@ while True:
             requests.get(url).json() # this sends the message
 
         if(short_qty != 0):
-          if(value_s_list[item_no][0] in (1, 3, 5, 7)):
+          if(value_s_list[item_no][0] in (1, 10, 11, 3, 30, 31, 5)):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
@@ -843,7 +875,7 @@ while True:
             requests.get(url).json() # this sends the message
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
-          if(value_s_list[item_no][0] in (0, 9, 14, 16, 18)) and (float(l_unpnl) > 0):
+          if(value_s_list[item_no][0] in (91, 77)) and (float(l_unpnl) > (invest_usdt * 0.1)):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
@@ -853,7 +885,7 @@ while True:
             requests.get(url).json() # this sends the message
 
         if(short_qty != 0):
-          if(value_s_list[item_no][0] in (0, 9, 13, 15, 17)) and (float(s_unpnl) > 0):
+          if(value_s_list[item_no][0] in (91, 88)) and (float(s_unpnl) > (invest_usdt * 0.1)):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
