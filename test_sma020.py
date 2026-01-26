@@ -216,7 +216,10 @@ def search_calc(sym_bol):
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
   cal_lever, order_position = 0, 0
-  std_diff = (c_list[0] * 0.5 / 10) * 2
+  cal_max, cal_min = 0, 0
+  fr_vol, md_vol, bk_vol = 0, 0, 0
+  upp_lever, low_lever = 0, 0
+  std_diff = c_list[start_p] * 0.5 / 5
   limit_diff = std_diff
   upp_max, low_min = max(h_list), min(l_list)
   max_diff = upp_max - low_min
@@ -224,76 +227,66 @@ def search_calc(sym_bol):
   nnum = l_list.index(low_min)
   max_vol = sum(v_list[min(nnum,xnum):max(nnum,xnum)+1])
   max_avg = max_vol / max_diff
-      
+
   if(max_diff > std_diff):
-    std_vol = max_avg * (std_diff * 0.5)
-    for fr in range(1,len(c_list)):
-      fr_vol = sum(v_list[:fr])
-      if(fr_vol > std_vol): break
-    fr_max = max(h_list[:fr])
-    fr_min = min(l_list[:fr])
-    fr_diff = fr_max - fr_min
-    fr_xnum = h_list[:fr].index(fr_max)
-    fr_nnum = l_list[:fr].index(fr_min)
+        std_vol = max_avg * (std_diff * 0.5)
+    
+        for fr in range(1,len(c_list)):
+          fr_vol = sum(v_list[:fr])
+          if(fr_vol > std_vol):
+            fr_max = max(h_list[:fr])
+            fr_min = min(l_list[:fr])
+            fr_xnum = h_list[:fr].index(fr_max)
+            fr_nnum = l_list[:fr].index(fr_min)
+            break
+#-------------------------------------------------------------------------------
+        if(fr_vol <= std_vol): order_position = 0
+        return(order_position)
+#-------------------------------------------------------------------------------     
+        for md in range(fr,len(v_list)):
+          md_vol = sum(v_list[fr:md])
+          if(md_vol > std_vol):
+            md_max = max(h_list[fr:md])
+            md_min = min(l_list[fr:md])
+            md_diff = md_max - md_min
+            md_xnum = h_list[fr:md].index(md_max) + fr
+            md_nnum = l_list[fr:md].index(md_min) + fr
+            break
+#-------------------------------------------------------------------------------
+        if(md_vol <= std_vol): order_position = 0
+        return(order_position)
+#-------------------------------------------------------------------------------
+        for bk in range(md,len(v_list)):
+          bk_vol = sum(v_list[md:bk])
+          if(bk_vol > std_vol):
+            bk_max = max(h_list[md:bk])
+            bk_min = min(l_list[md:bk])
+            bk_diff = bk_max - bk_min
+            bk_xnum = h_list[md:bk].index(bk_max) + md
+            bk_nnum = l_list[md:bk].index(bk_min) + md
+            break
+#-------------------------------------------------------------------------------
+        if(bk_vol <= std_vol): order_position = 0
+        return(order_position)
+#-------------------------------------------------------------------------------
+  if(min(fr_vol, md_vol, bk_vol) > std_vol):
+        cal_max = min(fr_max, md_max, bk_max)
+        cal_min = max(fr_min, md_min, bk_min)
+        if(cal_max < c_list[0]) and (c_list[0] > cal_min): order_position = 1
+        elif(cal_max > c_list[0]) and (c_list[0] < cal_min): order_position = 2
+        else: order_position = 3
+        upp_diff = max(fr_max, md_max, bk_max) - c_list[0]
+        low_diff = c_list[0] - min(fr_min, md_min, bk_min)
+        cal_diff = abs(cal_max - cal_min)
+        if(upp_diff == 0): upp_lever = 100
+        else: upp_lever = round(c_list[start_p] * 0.5 / upp_diff,2)
+        if(low_diff == 0): low_lever = 100  
+        else: low_lever = round(c_list[start_p] * 0.5 / low_diff,2)
+        if(cal_diff == 0): cal_lever = 100
+        else: cal_lever = round(c_list[start_p] * 0.5 / cal_diff,2)
 
-    for bk in range(fr+1,len(v_list)):
-      bk_vol = sum(v_list[fr:bk])
-      if(bk_vol > std_vol): break
-    if(fr != bk):
-      bk_max = max(h_list[fr:bk])
-      bk_min = min(l_list[fr:bk])
-      bk_diff = bk_max - bk_min
-      bk_xnum = h_list[fr:bk].index(bk_max) + fr
-      bk_nnum = l_list[fr:bk].index(bk_min) + fr
-    else:
-      bk_max = max(h_list)
-      bk_min = min(l_list)
-      bk_diff = bk_max - bk_min
-      bk_xnum = h_list.index(bk_max)
-      bk_nnum = l_list.index(bk_min)
-  else:
-    fr_vol, bk_vol, std_vol = 0, 0, 0
-    fr_max, bk_max = upp_max, upp_max
-    fr_min, bk_min = low_min, low_min
-    fr_xnum, bk_xnum = h_list.index(upp_max), h_list.index(upp_max)
-    fr_nnum, bk_nnum = l_list.index(low_min), l_list.index(low_min)
-
-  if(bk_max < fr_max) and (bk_min <= fr_min) and (min(fr_vol, bk_vol) > std_vol):
-    order_position = 5
-    limit_diff = abs(c_list[0] - bk_min)
-    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - c_list[0]) > abs(bk_min - fr_min)):
-      if(5 <= cal_lever <= 10): order_position = 1
-      if(cal_lever < 5): order_position = 11
-      if(cal_lever > 10): order_position = 10
-    if(abs(bk_max - c_list[0]) < abs(bk_min - fr_min)):
-      if(5 <= cal_lever <= 10): order_position = 3
-      if(cal_lever < 5): order_position = 31
-      if(cal_lever > 10): order_position = 30
-    if(bk_max > c_list[0]): order_position = 77
-        
-  if(bk_max >= fr_max) and (bk_min > fr_min) and (min(fr_vol, bk_vol) > std_vol):
-    order_position = 6
-    limit_diff = abs(bk_max - c_list[0])
-    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) < abs(bk_min - c_list[0])):
-      if(5 <= cal_lever <= 10): order_position = 2
-      if(cal_lever < 5): order_position = 21
-      if(cal_lever > 10): order_position = 20
-    if(abs(bk_max - fr_max) > abs(bk_min - c_list[0])):
-      if(5 <= cal_lever <= 10): order_position = 4
-      if(cal_lever < 5): order_position = 41
-      if(cal_lever > 10): order_position = 40
-    if(bk_min < c_list[0]): order_position = 88
-
-  if(bk_max >= fr_max) and (bk_min <= fr_min) and (min(fr_vol, bk_vol) > std_vol):
-    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    order_position = 91
-  if(bk_max <= fr_max) and (bk_min >= fr_min) and (min(fr_vol, bk_vol) > std_vol):
-    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    order_position = 90
-        
-  print(sym_bol, order_position, cal_lever)
+        if(order_position == 3) and (upp_lever > 5) and (low_lever > 5): order_position = 9
+        print(sym_bol, order_position, cal_lever)
 #-------------------------------------------------------------------------------
   time.sleep(1)
   return(order_position)
@@ -326,7 +319,10 @@ def order_calc(order_value):
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
   cal_lever, order_position = 0, 0
-  std_diff = (c_list[0] * 0.5 / 10) * 2
+  cal_max, cal_min = 0, 0
+  fr_vol, md_vol, bk_vol = 0, 0, 0
+  upp_lever, low_lever = 0, 0
+  std_diff = c_list[start_p] * 0.5 / 5
   limit_diff = std_diff
   upp_max, low_min = max(h_list), min(l_list)
   max_diff = upp_max - low_min
@@ -334,74 +330,65 @@ def order_calc(order_value):
   nnum = l_list.index(low_min)
   max_vol = sum(v_list[min(nnum,xnum):max(nnum,xnum)+1])
   max_avg = max_vol / max_diff
-      
+
   if(max_diff > std_diff):
-    std_vol = max_avg * (std_diff * 0.5)
-    for fr in range(1,len(c_list)):
-      fr_vol = sum(v_list[:fr])
-      if(fr_vol > std_vol): break
-    fr_max = max(h_list[:fr])
-    fr_min = min(l_list[:fr])
-    fr_diff = fr_max - fr_min
-    fr_xnum = h_list[:fr].index(fr_max)
-    fr_nnum = l_list[:fr].index(fr_min)
+        std_vol = max_avg * (std_diff * 0.5)
+    
+        for fr in range(1,len(c_list)):
+          fr_vol = sum(v_list[:fr])
+          if(fr_vol > std_vol):
+            fr_max = max(h_list[:fr])
+            fr_min = min(l_list[:fr])
+            fr_xnum = h_list[:fr].index(fr_max)
+            fr_nnum = l_list[:fr].index(fr_min)
+            break
+#-------------------------------------------------------------------------------
+        if(fr_vol <= std_vol): order_position = 0
+        return(order_position)
+#-------------------------------------------------------------------------------     
+        for md in range(fr,len(v_list)):
+          md_vol = sum(v_list[fr:md])
+          if(md_vol > std_vol):
+            md_max = max(h_list[fr:md])
+            md_min = min(l_list[fr:md])
+            md_diff = md_max - md_min
+            md_xnum = h_list[fr:md].index(md_max) + fr
+            md_nnum = l_list[fr:md].index(md_min) + fr
+            break
+#-------------------------------------------------------------------------------
+        if(md_vol <= std_vol): order_position = 0
+        return(order_position)
+#-------------------------------------------------------------------------------
+        for bk in range(md,len(v_list)):
+          bk_vol = sum(v_list[md:bk])
+          if(bk_vol > std_vol):
+            bk_max = max(h_list[md:bk])
+            bk_min = min(l_list[md:bk])
+            bk_diff = bk_max - bk_min
+            bk_xnum = h_list[md:bk].index(bk_max) + md
+            bk_nnum = l_list[md:bk].index(bk_min) + md
+            break
+#-------------------------------------------------------------------------------
+        if(bk_vol <= std_vol): order_position = 0
+        return(order_position)
+#-------------------------------------------------------------------------------
+  if(min(fr_vol, md_vol, bk_vol) > std_vol):
+        cal_max = min(fr_max, md_max, bk_max)
+        cal_min = max(fr_min, md_min, bk_min)
+        if(cal_max < c_list[0]) and (c_list[0] > cal_min): order_position = 1
+        elif(cal_max > c_list[0]) and (c_list[0] < cal_min): order_position = 2
+        else: order_position = 3
+        upp_diff = max(fr_max, md_max, bk_max) - c_list[0]
+        low_diff = c_list[0] - min(fr_min, md_min, bk_min)
+        cal_diff = abs(cal_max - cal_min)
+        if(upp_diff == 0): upp_lever = 100
+        else: upp_lever = round(c_list[start_p] * 0.5 / upp_diff,2)
+        if(low_diff == 0): low_lever = 100  
+        else: low_lever = round(c_list[start_p] * 0.5 / low_diff,2)
+        if(cal_diff == 0): cal_lever = 100
+        else: cal_lever = round(c_list[start_p] * 0.5 / cal_diff,2)
 
-    for bk in range(fr+1,len(v_list)):
-      bk_vol = sum(v_list[fr:bk])
-      if(bk_vol > std_vol): break
-    if(fr != bk):
-      bk_max = max(h_list[fr:bk])
-      bk_min = min(l_list[fr:bk])
-      bk_diff = bk_max - bk_min
-      bk_xnum = h_list[fr:bk].index(bk_max) + fr
-      bk_nnum = l_list[fr:bk].index(bk_min) + fr
-    else:
-      bk_max = max(h_list)
-      bk_min = min(l_list)
-      bk_diff = bk_max - bk_min
-      bk_xnum = h_list.index(bk_max)
-      bk_nnum = l_list.index(bk_min)
-  else:
-    fr_vol, bk_vol, std_vol = 0, 0, 0
-    fr_max, bk_max = upp_max, upp_max
-    fr_min, bk_min = low_min, low_min
-    fr_xnum, bk_xnum = h_list.index(upp_max), h_list.index(upp_max)
-    fr_nnum, bk_nnum = l_list.index(low_min), l_list.index(low_min)
 
-  if(bk_max < fr_max) and (bk_min <= fr_min) and (min(fr_vol, bk_vol) > std_vol):
-    order_position = 5
-    limit_diff = abs(c_list[0] - bk_min)
-    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - c_list[0]) > abs(bk_min - fr_min)):
-      if(5 <= cal_lever <= 10): order_position = 1
-      if(cal_lever < 5): order_position = 11
-      if(cal_lever > 10): order_position = 10
-    if(abs(bk_max - c_list[0]) < abs(bk_min - fr_min)):
-      if(5 <= cal_lever <= 10): order_position = 3
-      if(cal_lever < 5): order_position = 31
-      if(cal_lever > 10): order_position = 30
-    if(bk_max > c_list[0]): order_position = 77
-        
-  if(bk_max >= fr_max) and (bk_min > fr_min) and (min(fr_vol, bk_vol) > std_vol):
-    order_position = 6
-    limit_diff = abs(bk_max - c_list[0])
-    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    if(abs(bk_max - fr_max) < abs(bk_min - c_list[0])):
-      if(5 <= cal_lever <= 10): order_position = 2
-      if(cal_lever < 5): order_position = 21
-      if(cal_lever > 10): order_position = 20
-    if(abs(bk_max - fr_max) > abs(bk_min - c_list[0])):
-      if(5 <= cal_lever <= 10): order_position = 4
-      if(cal_lever < 5): order_position = 41
-      if(cal_lever > 10): order_position = 40
-    if(bk_min < c_list[0]): order_position = 88
-
-  if(bk_max >= fr_max) and (bk_min <= fr_min) and (min(fr_vol, bk_vol) > std_vol):
-    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    order_position = 91
-  if(bk_max <= fr_max) and (bk_min >= fr_min) and (min(fr_vol, bk_vol) > std_vol):
-    cal_lever = round(c_list[0] * 0.5 / limit_diff,2)
-    order_position = 90
 
   if(fr_max > bk_max): ord_max, ord_xnum = fr_max, fr_xnum
   else: ord_max, ord_xnum = bk_max, bk_xnum
