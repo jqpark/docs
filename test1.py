@@ -1,6 +1,6 @@
-#v5_test15-3-4_SMA???_260202-1200
+#v5_test15-3-4_MAIN_JQ_260203-1200
 #v5 api
-#Optimization <- v5_test13-6-3_SMA020_250619-1700
+#test again -> v5_test15-3-4_MAIN_JQ_260129-1630
 #telegram update using nest_asyncio
 #pip install pybit==5.5.0
 #pip install python-telegram-bot --upgrade
@@ -25,7 +25,7 @@ SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
 SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
 chat_id = 5372863028
 
-order_id = SMA020
+order_id = MAIN_JQ
 
 #MAIN_JQ
 if(order_id == MAIN_JQ):
@@ -540,13 +540,18 @@ while True:
   max_t_position = tot_position
 
   try_item = []
-#  if(avail_usdt < (invest_usdt * 2)):
-#    item_list = session.get_open_orders(category="linear",settleCoin="USDT")['result']['list']
-#    if(item_list == []): rest_item = []
-#    else: rest_item = pd.DataFrame(item_list)['symbol']
-#    for i in range(len(rest_item)):
-#      if(rest_item[i] in try_item): pass
-#      else: try_item.append(rest_item[i])
+  get_positions = pd.DataFrame(session.get_positions(category="linear",settleCoin="USDT")['result']['list'])
+  if get_positions.empty: long_list, short_list = [], []
+  else:
+    long_list = get_positions[(get_positions['positionIdx'] == 1)]
+    long_list = long_list['symbol'].unique().tolist()
+    short_list = get_positions[(get_positions['positionIdx'] == 2)]
+    short_list = short_list['symbol'].unique().tolist()
+  l_order_num = len(long_list)
+  s_order_num = len(short_list)
+  avail_num = int((my_usdt / invest_usdt) * 0.5)
+  l_avail_num = avail_num - l_order_num
+  s_avail_num = avail_num - s_order_num
 
   rest_list, open_list, trail_list, stop_list = [], [], [], []
   item_list = pd.DataFrame(session.get_open_orders(category="linear",settleCoin="USDT",orderFilter='StopOrder',limit=50)['result']['list'])
@@ -562,12 +567,6 @@ while True:
 #    except_list = list(set(pd.concat([Trail_list,double_list],axis=0)["symbol"].tolist()))
 #  set_except = set(except_list)
   rest_list = [item for item in open_list if item not in trail_list]
-
-#  get_positions = session.get_positions(category="linear",settleCoin="USDT")['result']['list']
-#  if(get_positions == []): get_item, get_list = [], []
-#  else: 
-#    get_item = pd.DataFrame(get_positions)['symbol']
-#    get_list = get_item.tolist()
 
   del_list = session.get_announcement(locale="en-US",type='Delistings',tag='Derivatives')['result']['list']
   if(del_list == []): title_list = []
@@ -863,7 +862,7 @@ while True:
 #-------------------------------------------------------------------------------
         if(order_condition[item_no] == 9) and (value_s_list[item_no][0] != 0):
 #-------------------------------------------------------------------------------
-          if(value_s_list[item_no][0] in (3, 31)):
+          if(value_s_list[item_no][0] in (3, 31)) and (l_avail_num > 0):
             if(long_qty == 0) and ((invest_usdt * 1) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
                 if(float(max_lever) >= float(l_sym_lever)) and (m_order_idx[1] == 0):
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
@@ -877,7 +876,7 @@ while True:
 #                    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
 #                    requests.get(url).json() # this sends the message
 
-          if(value_s_list[item_no][0] in (3, 32)):
+          if(value_s_list[item_no][0] in (3, 32)) and (s_avail_num > 0):
             if(short_qty == 0) and ((invest_usdt * 1) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
                 if(float(max_lever) >= float(s_sym_lever)) and (m_order_idx[2] == 0):
                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
@@ -932,7 +931,7 @@ while True:
 #            requests.get(url).json() # this sends the message
 #-------------------------------------------------------------------------------
         if(order_condition[item_no] != 0) and (long_qty != 0):
-          if(value_s_list[item_no][0] in (2, 20, 22, 3, 30, 31, 32, 33)) and (float(l_unpnl) > (invest_usdt * 0.1)):
+          if(value_s_list[item_no][0] in (2, 20, 22, 30, 33)) and (float(l_unpnl) > (invest_usdt * 0.1)):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
@@ -942,7 +941,7 @@ while True:
             requests.get(url).json() # this sends the message
 
         if(order_condition[item_no] != 0) and (short_qty != 0):
-          if(value_s_list[item_no][0] in (1, 10, 11, 3, 30, 31, 32, 33)) and (float(s_unpnl) > (invest_usdt * 0.1)):
+          if(value_s_list[item_no][0] in (1, 10, 11, 30, 33)) and (float(s_unpnl) > (invest_usdt * 0.1)):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
