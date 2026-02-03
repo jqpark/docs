@@ -1,4 +1,4 @@
-#v5_test15-3-4_MAIN_JQ_260128-1930
+#v5_test15-3-4_MAIN_JQ_260129-1630
 #v5 api
 #Optimization <- v5_test13-6-3_SMA020_250619-1700
 #telegram update using nest_asyncio
@@ -229,7 +229,7 @@ def search_calc(sym_bol):
     if(max_diff < std_diff): continue
 #-------------------------------------------------------------------------------     
     if(max_diff > std_diff):
-      std_vol = max_avg * (std_diff * 1.0)
+      std_vol = max_avg * (std_diff * 0.5)
       for fr in range(1,len(c_list)):
         fr_vol = sum(v_list[:fr])
         if(fr_vol > std_vol): break
@@ -851,23 +851,23 @@ while True:
 #                   requests.get(url).json() # this sends the message
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-#        if(long_qty != 0):
-#          ex_act_price = str(float(l_ent_price) + (abs(float(l_ent_price) - float(l_st_loss)) * 1.5))
-#          act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
-#          if(float(l_trailing) == 0) and (float(act_price) > sym_price):
-#            ex_ts_diff = abs(float(l_ent_price) - float(l_st_loss)) * 1.5
-#            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
-#            add_order = [sym_bol, ts_diff, act_price, 1]
-#            set_trading_stop_item(add_order)
+        if(long_qty != 0):
+          ex_act_price = str(float(l_ent_price) + (abs(float(l_ent_price) - float(l_st_loss)) * 1.5))
+          act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
+          if(float(l_trailing) == 0) and (float(act_price) > sym_price):
+            ex_ts_diff = abs(float(l_ent_price) - float(l_st_loss)) * 1.5
+            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
+            add_order = [sym_bol, ts_diff, act_price, 1]
+            set_trading_stop_item(add_order)
 #-------------------------------------------------------------------------------
-#        if(short_qty != 0):
-#          ex_act_price = str(float(s_ent_price) - (abs(float(s_ent_price) - float(s_st_loss)) * 1.5))
-#          act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
-#          if(float(s_trailing) == 0) and (float(act_price) < sym_price):
-#            ex_ts_diff = abs(float(s_ent_price) - float(s_st_loss)) * 1.5
-#            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
-#            add_order = [sym_bol, ts_diff, act_price, 2]
-#            set_trading_stop_item(add_order)
+        if(short_qty != 0):
+          ex_act_price = str(float(s_ent_price) - (abs(float(s_ent_price) - float(s_st_loss)) * 1.5))
+          act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
+          if(float(s_trailing) == 0) and (float(act_price) < sym_price):
+            ex_ts_diff = abs(float(s_ent_price) - float(s_st_loss)) * 1.5
+            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
+            add_order = [sym_bol, ts_diff, act_price, 2]
+            set_trading_stop_item(add_order)
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #        if(long_qty != 0):
