@@ -219,7 +219,7 @@ def search_calc(sym_bol):
     cal_lever, order_position = 0, 0
     cal_max, cal_min = 0, 0
     cal_upp, cal_low = 0, 0
-    fr_vol, md_vol, bk_vol = 0, 0, 0
+    fr_vol, md_vol, bk_vol, std_vol = 0, 0, 0, 0
     upp_lever, low_lever = 0, 0
     std_diff = c_list[0] * 0.5 / 5
     limit_diff = std_diff
@@ -353,7 +353,7 @@ def order_calc(order_value):
     cal_lever, order_position = 0, 0
     cal_max, cal_min = 0, 0
     cal_upp, cal_low = 0, 0
-    fr_vol, md_vol, bk_vol = 0, 0, 0
+    fr_vol, md_vol, bk_vol, std_vol = 0, 0, 0, 0
     upp_lever, low_lever = 0, 0
     std_diff = c_list[0] * 0.5 / 5
     limit_diff = std_diff
@@ -823,7 +823,7 @@ while True:
         l_order_price = str(int(Decimal(l_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_ex_qty = str((invest_usdt * float(l_sym_lever)) / float(l_order_price))
         l_order_qty = str(int(Decimal(l_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        l_tp_ex_price = str(h_price + (h_diff * 5) + float(tick_size))
+        l_tp_ex_price = str(h_price + (h_diff * 3) + float(tick_size))
         l_tp_price = str(int(Decimal(l_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_st_ex_price = str(h_price - h_diff - float(tick_size))
         l_st_price = str(int(Decimal(l_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
@@ -835,7 +835,7 @@ while True:
         s_order_price = str(int(Decimal(s_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_ex_qty = str((invest_usdt * float(s_sym_lever)) / float(s_order_price))
         s_order_qty = str(int(Decimal(s_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        s_tp_ex_price = str(l_price - (l_diff * 5) - float(tick_size))
+        s_tp_ex_price = str(l_price - (l_diff * 3) - float(tick_size))
         s_tp_price = str(int(Decimal(s_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_st_ex_price = str(l_price + l_diff + float(tick_size))
         s_st_price = str(int(Decimal(s_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
