@@ -1,4 +1,4 @@
-#v5_test15-3-4_MAIN_JQ_260203-1200
+#v5_test15-3-5_MAIN_JQ_260203-1200
 #v5 api
 #test again -> v5_test15-3-4_MAIN_JQ_260129-1630
 #telegram update using nest_asyncio
@@ -219,7 +219,7 @@ def search_calc(sym_bol):
     cal_lever, order_position = 0, 0
     cal_max, cal_min = 0, 0
     cal_upp, cal_low = 0, 0
-    fr_vol, md_vol, bk_vol = 0, 0, 0
+    fr_vol, md_vol, bk_vol, std_vol = 0, 0, 0, 0
     upp_lever, low_lever = 0, 0
     std_diff = c_list[0] * 0.5 / 5
     limit_diff = std_diff
@@ -230,8 +230,10 @@ def search_calc(sym_bol):
     max_vol = sum(v_list[min(nnum,xnum):max(nnum,xnum)+1])
     max_avg = max_vol / max_diff
 
-    if(max_diff > std_diff):
-        std_vol = max_avg * (std_diff * 0.5)
+    diff_range = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
+    for diff in diff_range:
+      if(max_diff > std_diff):
+        std_vol = max_avg * (std_diff * diff)
     
         for fr in range(1,len(c_list)):
           fr_vol = sum(v_list[:fr])
@@ -267,9 +269,7 @@ def search_calc(sym_bol):
             break
 #-------------------------------------------------------------------------------
         if(bk_vol <= std_vol): continue
-    else: continue      
 #-------------------------------------------------------------------------------
-    if(min(fr_vol, md_vol, bk_vol) > std_vol):
         lim_max = max(fr_max, md_max, bk_max)
         lim_min = min(fr_min, md_min, bk_min)
         cal_max = min(fr_max, md_max, bk_max)
@@ -313,6 +313,8 @@ def search_calc(sym_bol):
         elif(order_position == 33) and (s_selection == 2): order_position = 32
         print(itv, sym_bol, order_position, upp_lever, low_lever)
         break
+      else: continue            
+    if(min(fr_vol, md_vol, bk_vol) > std_vol): break
 #-------------------------------------------------------------------------------
   time.sleep(1)
   return(order_position)
@@ -351,7 +353,7 @@ def order_calc(order_value):
     cal_lever, order_position = 0, 0
     cal_max, cal_min = 0, 0
     cal_upp, cal_low = 0, 0
-    fr_vol, md_vol, bk_vol = 0, 0, 0
+    fr_vol, md_vol, bk_vol, std_vol = 0, 0, 0, 0
     upp_lever, low_lever = 0, 0
     std_diff = c_list[0] * 0.5 / 5
     limit_diff = std_diff
@@ -362,8 +364,10 @@ def order_calc(order_value):
     max_vol = sum(v_list[min(nnum,xnum):max(nnum,xnum)+1])
     max_avg = max_vol / max_diff
 
-    if(max_diff > std_diff):
-        std_vol = max_avg * (std_diff * 0.5)
+    diff_range = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
+    for diff in diff_range:
+      if(max_diff > std_diff):
+        std_vol = max_avg * (std_diff * diff)
     
         for fr in range(1,len(c_list)):
           fr_vol = sum(v_list[:fr])
@@ -399,9 +403,7 @@ def order_calc(order_value):
             break
 #-------------------------------------------------------------------------------
         if(bk_vol <= std_vol): continue
-    else: continue          
 #-------------------------------------------------------------------------------
-    if(min(fr_vol, md_vol, bk_vol) > std_vol):
         lim_max = max(fr_max, md_max, bk_max)
         lim_min = min(fr_min, md_min, bk_min)
         cal_max = min(fr_max, md_max, bk_max)
@@ -454,6 +456,8 @@ def order_calc(order_value):
         v_value_list = [mx_server_time, mn_server_time, upp_lever, low_lever]
         open_order_condition = 9
         break
+      else: continue            
+    if(min(fr_vol, md_vol, bk_vol) > std_vol): break
 #-------------------------------------------------------------------------------
   time.sleep(1)
   order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
@@ -819,7 +823,7 @@ while True:
         l_order_price = str(int(Decimal(l_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_ex_qty = str((invest_usdt * float(l_sym_lever)) / float(l_order_price))
         l_order_qty = str(int(Decimal(l_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        l_tp_ex_price = str(h_price + (h_diff * 5) + float(tick_size))
+        l_tp_ex_price = str(h_price + (h_diff * 3) + float(tick_size))
         l_tp_price = str(int(Decimal(l_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_st_ex_price = str(h_price - h_diff - float(tick_size))
         l_st_price = str(int(Decimal(l_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
@@ -831,7 +835,7 @@ while True:
         s_order_price = str(int(Decimal(s_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_ex_qty = str((invest_usdt * float(s_sym_lever)) / float(s_order_price))
         s_order_qty = str(int(Decimal(s_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        s_tp_ex_price = str(l_price - (l_diff * 5) - float(tick_size))
+        s_tp_ex_price = str(l_price - (l_diff * 3) - float(tick_size))
         s_tp_price = str(int(Decimal(s_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_st_ex_price = str(l_price + l_diff + float(tick_size))
         s_st_price = str(int(Decimal(s_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
