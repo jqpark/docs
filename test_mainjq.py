@@ -1,10 +1,5 @@
 #v5_test15-3-5_MAIN_JQ_260203-1200
 #v5 api
-#test again -> v5_test15-3-4_MAIN_JQ_260129-1630
-#telegram update using nest_asyncio
-#pip install pybit==5.5.0
-#pip install python-telegram-bot --upgrade
-#pip install nest_asyncio
 from pybit.unified_trading import HTTP
 import pandas as pd
 import time
@@ -19,63 +14,15 @@ import numpy
 from decimal import Decimal
 import os
 
-MAIN_JQ = "7889824708:AAGxaMmMwoBqYfK0Uoo6x5yml_xlnNhcHoo"
-JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
-SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
-SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
-chat_id = 5372863028
-
-order_id = MAIN_JQ
-
-#MAIN_JQ
-if(order_id == MAIN_JQ):
-  session = HTTP(
+chat_id = os.getenv("chat_id")
+order_id = os.getenv("order_id")
+session = HTTP(
     testnet=False,
-    api_key="iPO6ATgyMtjsRIdUqq",
-    api_secret="txYdie99Kn5XSEb0KjsJkOGItf5bRGvgHfkh",
+    api_key=os.getenv("api_key"),
+    api_secret=os.getenv("api_secret"),
     max_retries=10,
     retry_delay=15,
   )
-
-#JQPARK
-if(order_id == JQPARK):
-  session = HTTP(
-    testnet=False,
-    api_key="LRkVDvSOR7uMQJ8Dsn",
-    api_secret="lzzvrHvl9naF5YJE04M0H5CyzuYsRie8hh5g",
-    max_retries=10,
-    retry_delay=15,
-  )
-
-#SMA000
-if(order_id == SMA000):
-  session = HTTP(
-    testnet=False,
-    api_key="uv9MYvsNlh5f4XSXJU",
-    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
-    max_retries=10,
-    retry_delay=15,
-  )
-
-#SMA020
-if(order_id == SMA020):
-  session = HTTP(
-    testnet=False,
-    api_key="EE0YCNPEGaVVfDvsCh",
-    api_secret="SlmtbkKMfFrZumag5ceTXRYA4wWZS55pc2eZ",
-    max_retries=10,
-    retry_delay=15,
-  )
-
-#wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
-#my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
-#live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
-#tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
-#avail_usdt = my_usdt - tot_position
-
-#max_l_usdt, min_l_usdt, origin_usdt = live_usdt, live_usdt, my_usdt
-#max_m_usdt, min_m_usdt = my_usdt, my_usdt
-#max_t_position = tot_position
 
 invest_usdt = 2
 delay_time = 60 #time_itv*60
@@ -531,7 +478,7 @@ while True:
   end_time = int(time.time())
   diff_time = end_time - start_time
   rest_time = int(120 - diff_time)
-  if(rest_time > 0): time.sleep(rest_time)
+  if(110 > rest_time > 0): time.sleep(rest_time)
   start_time = int(time.time())
   wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
   my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
@@ -823,7 +770,7 @@ while True:
         l_order_price = str(int(Decimal(l_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_ex_qty = str((invest_usdt * float(l_sym_lever)) / float(l_order_price))
         l_order_qty = str(int(Decimal(l_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        l_tp_ex_price = str(h_price + (h_diff * 3) + float(tick_size))
+        l_tp_ex_price = str(h_price + (h_diff * 5) + float(tick_size))
         l_tp_price = str(int(Decimal(l_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_st_ex_price = str(h_price - h_diff - float(tick_size))
         l_st_price = str(int(Decimal(l_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
@@ -835,7 +782,8 @@ while True:
         s_order_price = str(int(Decimal(s_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_ex_qty = str((invest_usdt * float(s_sym_lever)) / float(s_order_price))
         s_order_qty = str(int(Decimal(s_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        s_tp_ex_price = str(l_price - (l_diff * 3) - float(tick_size))
+        s_tp_ex_price = str(l_price - (l_diff * 5) - float(tick_size))
+        if(float(s_tp_ex_price) < (l_price * 0.15): s_tp_ex_price = str(l_price * 0.15)
         s_tp_price = str(int(Decimal(s_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_st_ex_price = str(l_price + l_diff + float(tick_size))
         s_st_price = str(int(Decimal(s_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
