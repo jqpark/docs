@@ -376,17 +376,18 @@ while True:
     if('Stop' in stop_type): stop_list.append(sym_bol)
     
   try_item = list((set(setdf_list) - set(trail_list)) | set(take_list))
-  
+  try_item = list(set(union_list) - set(trail_list))
   l_order_num = len(long_list)
   s_order_num = len(short_list)
   secure_item = len(union_list) - len(inter_list) - len(trail_list)
   secure_usdt = secure_item * invest_usdt
+  secure_usdt = len(try_item) * invest_usdt * 4
   avail_order_num = int(((avail_usdt - secure_usdt) / invest_usdt) * 0.5)
-  
-  cancel_list = list(set(trail_list) & set(stop_list))
-  if(cancel_list != []):
-    for sym_bol in cancel_list:
-      session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+  avail_order_num = int((my_usdt - secure_usdt) / (invest_usdt * 3))
+#  cancel_list = list(set(trail_list) & set(stop_list))
+#  if(cancel_list != []):
+#    for sym_bol in cancel_list:
+#      session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
 #-------------------------------------------------------------------------------
   if(live_usdt > (my_usdt * 1.5)):
     for sym_bol in long_list:
