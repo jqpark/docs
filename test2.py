@@ -1,4 +1,4 @@
-#v5_test15-4-2_MAIN_JQ_260326-1000
+#v5_test15-4-2_JQPARK_260327-2130
 #v5 api
 from pybit.unified_trading import HTTP
 import pandas as pd
@@ -16,7 +16,7 @@ import os
 ##############################################################################
 ##############################################################################
 kst = pytz.timezone("Asia/Seoul")
-time_str = "2026-03-27,14:50"
+time_str = "2026-03-27,21:30"
 dt = datetime.strptime(time_str, "%Y-%m-%d,%H:%M")
 dt = kst.localize(dt)
 start_time = int(dt.timestamp() * 1000)
@@ -329,7 +329,7 @@ def calc_part(order_condition, sym_bol, h_price, l_price, std_diff):
 ###############################################################################
 ###############################################################################
 # make rest_item list
-start_time = int(time.time()) * 1000
+#start_time = int(time.time()) * 1000
 check_symbol, check_order = [], []
 
 while True:
@@ -375,34 +375,34 @@ while True:
     if('TrailingStop' in stop_type): trail_list.append(sym_bol)
     if('Stop' in stop_type): stop_list.append(sym_bol)
     
-  try_item = list((set(setdf_list) - set(trail_list)) | set(take_list))
-  try_item = list(set(union_list) - set(trail_list))
+#  try_item = list((set(setdf_list) - set(trail_list)) | set(take_list))
+  try_list = list(set(union_list) - set(trail_list))
   l_order_num = len(long_list)
   s_order_num = len(short_list)
-  secure_item = len(union_list) - len(inter_list) - len(trail_list)
-  secure_usdt = secure_item * invest_usdt
-  secure_usdt = len(try_item) * invest_usdt * 4
-  avail_order_num = int(((avail_usdt - secure_usdt) / invest_usdt) * 0.5)
+#  secure_item = len(union_list) - len(inter_list) - len(trail_list)
+#  secure_usdt = secure_item * invest_usdt
+  secure_usdt = len(try_list) * invest_usdt * 4
+#  avail_order_num = int(((avail_usdt - secure_usdt) / invest_usdt) * 0.5)
   avail_order_num = int((my_usdt - secure_usdt) / (invest_usdt * 3))
 #  cancel_list = list(set(trail_list) & set(stop_list))
 #  if(cancel_list != []):
 #    for sym_bol in cancel_list:
 #      session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
 #-------------------------------------------------------------------------------
-  if(live_usdt > (my_usdt * 1.5)):
-    for sym_bol in long_list:
-      add_order = [sym_bol, "Sell", 1]
-      closed_order_part(add_order)
-      time.sleep(1)
+#  if(live_usdt > (my_usdt * 1.5)):
+#    for sym_bol in long_list:
+#      add_order = [sym_bol, "Sell", 1]
+#      closed_order_part(add_order)
+#      time.sleep(1)
 
-    for sym_bol in short_list:
-      add_order = [sym_bol, "Buy", 2]
-      closed_order_part(add_order)
-      time.sleep(1)
+#    for sym_bol in short_list:
+#      add_order = [sym_bol, "Buy", 2]
+#      closed_order_part(add_order)
+#      time.sleep(1)
 
-    avail_order_num = int((live_usdt / invest_usdt) * 0.5)
-    union_list, try_item = [], []
-    secure_usdt = 0
+#    avail_order_num = int((live_usdt / invest_usdt) * 0.5)
+#    union_list, try_item = [], []
+#    secure_usdt = 0
 #-------------------------------------------------------------------------------
 #rest_item = try_item.copy()
 #-------------------------------------------------------------------------------
@@ -439,28 +439,34 @@ while True:
     added_symbols = [x for x in added_symbols if 'USDT' in x]
     time.sleep(1)
 #-------------------------------------------------------------------------------
-    if(check_symbol == []): 
-      check_symbol = added_symbols.copy()
-      for sym in range(len(check_symbol)): check_order.append(0)
+    for num in len(added_symbols):
+      if(avail_order_num >= (num + 1)):
+        try_list.append(added_symbols[num])
+      else: break
+  try_item = try_list.copy()
+#-------------------------------------------------------------------------------
+#    if(check_symbol == []): 
+#      check_symbol = added_symbols.copy()
+#      for sym in range(len(check_symbol)): check_order.append(0)
    
-    num = 0
-    for sym_bol in added_symbols:
-      search_calc_result = search_calc(sym_bol)   
-      print(sym_bol, "check_order:", check_order[symbol_num], "serch_result:",search_calc_result)
-      if(ordered_item > len(union_list)) and (check_order[symbol_num] != 0):
+#    num = 0
+#    for sym_bol in added_symbols:
+#      search_calc_result = search_calc(sym_bol)   
+#      print(sym_bol, "check_order:", check_order[symbol_num], "serch_result:",search_calc_result)
+#      if(ordered_item > len(union_list)) and (check_order[symbol_num] != 0):
 #        if(search_calc_result in (1, 2)) and (check_order[symbol_num] != search_calc_result):
-        if(search_calc_result == 1) and (check_order[symbol_num] in (2, 20)):
-          num = num + 1
-          if(avail_order_num >= num): try_item.append(sym_bol)
-        if(search_calc_result == 2) and (check_order[symbol_num] in (1, 10)):
-          num = num + 1
-          if(avail_order_num >= num): try_item.append(sym_bol)
-      check_order[symbol_num] = search_calc_result
+#        if(search_calc_result == 1) and (check_order[symbol_num] in (2, 20)):
+#          num = num + 1
+#          if(avail_order_num >= num): try_item.append(sym_bol)
+#        if(search_calc_result == 2) and (check_order[symbol_num] in (1, 10)):
+#          num = num + 1
+#          if(avail_order_num >= num): try_item.append(sym_bol)
+#      check_order[symbol_num] = search_calc_result
           
-    cancel_symbol = list(set(check_symbol) - set(added_symbols))
-    for sym_bol in cancel_symbol:
-      symbol_num = check_symbol.index(sym_bol)
-      check_order[symbol_num] = 0
+#    cancel_symbol = list(set(check_symbol) - set(added_symbols))
+#    for sym_bol in cancel_symbol:
+#      symbol_num = check_symbol.index(sym_bol)
+#      check_order[symbol_num] = 0
 #-------------------------------------------------------------------------------
   order_usdt, time_t, limit_diff_p = [], [], []
   max_margin, min_margin, max_pnl = [], [], []
@@ -607,10 +613,6 @@ while True:
           if(m_stop_order_list[list][0] == 2):
             m_order_idx[2], m_order_tp[2], m_order_st[2] = m_stop_order_list[list][0], float(m_stop_order_list[list][1]), float(m_stop_order_list[list][2])
 #-------------------------------------------------------------------------------
-  time.sleep(1)
-
-            limit_order_list = open_orders['orderType'].tolist()
-        stop_order_list = open_orders['stopOrderType'].tolist()
 #-------------------------------------------------------------------------------
       order_condition[item_no] = 0
       if(long_qty == 0) and (short_qty == 0) and (("Limit" in limit_order_list) or ("Stop" in stop_order_list)):
