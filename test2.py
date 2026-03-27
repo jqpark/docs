@@ -623,14 +623,15 @@ while True:
             value_s_list[item_no] = search_calc_result[2]
             value_v_list[item_no] = search_calc_result[3]
           
-      if(long_qty != 0) and (short_qty == 0):
+      if("Limit" not in limit_order_list) and ("Stop" not in stop_order_list):
+        if(long_qty != 0) and (short_qty == 0):
           order_calc_result = order_calc(sym_bol, apply_time, 1, float(l_ent_price), float(l_st_loss))
           order_condition[item_no] = order_calc_result[0]
           limit_diff_p[item_no] = order_calc_result[1]
           value_s_list[item_no] = order_calc_result[2]
           value_v_list[item_no] = order_calc_result[3]
             
-      if(long_qty == 0) and (short_qty != 0):
+        if(long_qty == 0) and (short_qty != 0):
           order_calc_result = order_calc(sym_bol, apply_time, 2, float(s_ent_price), float(s_st_loss))
           order_condition[item_no] = order_calc_result[0]
           limit_diff_p[item_no] = order_calc_result[1]
