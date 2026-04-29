@@ -1,11 +1,5 @@
-#v5_test14-12-7_SMA000_251121-1600
+#v5_test15-5-5_SMA000_260428-1800_73.5
 #v5 api
-#Optimization <- v5_test13-6-3_SMA020_250619-1700
-#problume -> v5_test14-9-4_JQPARK_251014-1730 -> v5_test13-6-2_JQPARK_250523-1620 - retry code
-#telegram update using nest_asyncio
-#pip install pybit==5.5.0
-#pip install python-telegram-bot --upgrade
-#pip install nest_asyncio
 from pybit.unified_trading import HTTP
 import pandas as pd
 import time
@@ -20,69 +14,20 @@ import numpy
 from decimal import Decimal
 import os
 
-MAIN_JQ = "7889824708:AAGxaMmMwoBqYfK0Uoo6x5yml_xlnNhcHoo"
-JQPARK = "6317837892:AAEQkXFTEJFLnvXgRZzulpzY_1pYjhR-fxM"
-SMA000 = "5167779817:AAG8yAxw6mcWitb0NLi_KN4ms2vv9vDuqQA"
-SMA020 = "5550859753:AAFGOcHoT_NK04x3ZnEu_WhzinAqxXUIrlU"
-chat_id = 5372863028
-
-order_id = SMA000
-
-#MAIN_JQ
-if(order_id == MAIN_JQ):
-  session = HTTP(
-    testnet=False,
-    api_key="iPO6ATgyMtjsRIdUqq",
-    api_secret="txYdie99Kn5XSEb0KjsJkOGItf5bRGvgHfkh",
-    max_retries=10,
-    retry_delay=15,
-  )
-
-#JQPARK
-if(order_id == JQPARK):
-  session = HTTP(
-    testnet=False,
-    api_key="LRkVDvSOR7uMQJ8Dsn",
-    api_secret="lzzvrHvl9naF5YJE04M0H5CyzuYsRie8hh5g",
-    max_retries=10,
-    retry_delay=15,
-  )
-
-#SMA000
-if(order_id == SMA000):
-  session = HTTP(
-    testnet=False,
-    api_key="uv9MYvsNlh5f4XSXJU",
-    api_secret="S4A3bZNZ5vfddXYQ2xjGXCFfmTHvKh0jSNhH",
-    max_retries=10,
-    retry_delay=15,
-  )
-
-#SMA020
-if(order_id == SMA020):
-  session = HTTP(
-    testnet=False,
-    api_key="EE0YCNPEGaVVfDvsCh",
-    api_secret="SlmtbkKMfFrZumag5ceTXRYA4wWZS55pc2eZ",
-    max_retries=10,
-    retry_delay=15,
-  )
-
-#wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
-#my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
-#live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
-#tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
-#avail_usdt = my_usdt - tot_position
-
-#max_l_usdt, min_l_usdt, origin_usdt = live_usdt, live_usdt, my_usdt
-#max_m_usdt, min_m_usdt = my_usdt, my_usdt
-#max_t_position = tot_position
-
 invest_usdt = 2
-delay_time = 60 #time_itv*60
-check_time = 0
-return_time = 100
-###############################################################################
+check_order_list = []
+##############################################################################
+##############################################################################
+chat_id = os.getenv("chat_id")
+order_id = os.getenv("order_id")
+session = HTTP(
+    testnet=False,
+    api_key=os.getenv("api_key"),
+    api_secret=os.getenv("api_secret"),
+    max_retries=10,
+    retry_delay=15,
+  )
+##############################################################################
 ##############################################################################
 def order_market_part(add_order):
 #   if(calc_result[0] == 0):
@@ -94,12 +39,12 @@ def order_market_part(add_order):
                qty=add_order[2],   # 개수
                timeInForce="GTC",
                positionIdx=add_order[3],        #hedge-mode Buy side
+               orderLinkId=add_order[6],
                takeProfit=add_order[4],
                stopLoss=add_order[5],
                reduceOnly=False,
                closeOnTrigger=False,
              ))
-
       time.sleep(1)
 ##############################################################################
 def order_limit_part(add_order):
@@ -115,12 +60,12 @@ def order_limit_part(add_order):
 #               triggerPrice=add_order[2],
                timeInForce="GTC",
                positionIdx=add_order[4],        #hedge-mode Buy side
+               orderLinkId=add_order[7],
                takeProfit=add_order[5],
                stopLoss=add_order[6],
                reduceOnly=False,
                closeOnTrigger=False,
              ))
-
       time.sleep(1)
 ##############################################################################
 #symbol, side, qty, triggerdirection, triggerprice, position, stoploss
@@ -136,12 +81,12 @@ def conditional_market_part(add_order):
                triggerPrice=add_order[4],
                timeInForce="GTC",
                positionIdx=add_order[5],        #hedge-mode Buy side
+               orderLinkId=add_order[8],
                takeProfit=add_order[6],
                stopLoss=add_order[7],
                reduceOnly=False,
                closeOnTrigger=False,
              ))
-
       time.sleep(1)
 ##############################################################################
 def closed_order_part(add_order):
@@ -170,7 +115,6 @@ def closed_order_part(add_order):
                reduceOnly=True,
                closeOnTrigger=True,
              ))
-
     time.sleep(1)
 ##############################################################################
 ##############################################################################
@@ -196,23 +140,27 @@ def set_trading_stop_item(add_order):
 ))
 ################################################################################
 ################################################################################
-#        order_value = [sym_bol, sym_price, order_condition[item_no], limit_diff_p[item_no],
-#                       value_s_list[item_no], value_v_list[item_no]]
-def order_calc(order_value):
-  itv = 3
-  sym_bol = order_value[0]
-  sym_price = order_value[1]
-  open_order_condition = order_value[2]
-  limit_diff = order_value[3]
-  s_value_list = order_value[4]
-  v_value_list = order_value[5]
+def set_trading_stop_profit(add_order):
+      print(session.set_trading_stop(
+            category="linear",
+            symbol=add_order[0],
+            takeProfit="0",
+            trailingStop=add_order[1],
+            tpslMode="Full",
+            positionIdx=add_order[2],
+))
+################################################################################
+################################################################################
+def search_calc(sym_bol):
+  order_position = 9
+  itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720]
+  for itv in itv_list:
 #-------------------------------------------------------------------------------
-  get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
-  time.sleep(1)
-  kline = pd.DataFrame(get_kline)
-
-  t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
-  for i in range(len(kline[0])):
+    get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
+    time.sleep(1)
+    kline = pd.DataFrame(get_kline)
+    t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
+    for i in range(len(kline[0])):
       t_list.append(int(kline[0][i]))
       o_list.append(float(kline[1][i]))
       h_list.append(float(kline[2][i]))
@@ -221,90 +169,206 @@ def order_calc(order_value):
       v_list.append(float(kline[5][i]))
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
-#  if(open_order_condition == 0) or (open_order_condition != 0):
-  turn_num = 0
-  ready_p, step_p, end_p = 1, 0, -1
-  max_price, min_price, now_price, opn_price = max(h_list), min(l_list), c_list[0], o_list[-1]
-  upp_price, low_price = max_price, min_price
-  max_diff = max_price - min_price
-  std_diff = c_list[0] * 0.5 / 5
-  min_diff = c_list[0] * 0.5 / 10
-  maxd_per = round(max_diff / std_diff * 100,2)
-  for lx in range(1,len(c_list)+1):
-    if((max(h_list[:lx]) - min(l_list[:lx])) > std_diff): break
-  nmx_diff = max(h_list[:lx]) - min(l_list[:lx])
-  limit_diff = nmx_diff
-#      break
+    cal_lever, order_position = 5, 9
+    fr_vol, bk_vol, std_vol = 0, 0, 0
+    upp_lever, low_lever = 0, 0
+    std_diff = c_list[0] * 0.5 / 5
+    limit_diff = std_diff
+    upp_max, low_min = max(h_list), min(l_list)
+    l_next_price, s_next_price = upp_max, low_min
+    max_diff = upp_max - low_min
+    xnum = h_list.index(upp_max)
+    nnum = l_list.index(low_min)
+    max_vol = sum(v_list[min(nnum,xnum):max(nnum,xnum)+1])
+    max_avg = max_vol / max_diff
+
+    diff_range = [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+    for diff in diff_range:
+      if(max_diff > (std_diff * diff)):
+        std_vol = max_avg * (std_diff * diff)
+        for fr in range(1,len(c_list)):
+          fr_vol = sum(v_list[:fr])
+          if(fr_vol > std_vol):
+            fr_max = max(h_list[:fr])
+            fr_min = min(l_list[:fr])
+            fr_diff = fr_max - fr_min
+            fr_xnum = h_list[:fr].index(fr_max)
+            fr_nnum = l_list[:fr].index(fr_min)
+            break
 #-------------------------------------------------------------------------------
-#  if(max_diff < std_diff): limit_diff = max_diff
-#  else:
-#    open_order_condition = "PASS"
-#    s_value_list = [0, max_price, min_price]
-#    v_value_list = [0, now_price, round(ready_p,2)]
-#    order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
-#    return(order_return)
+        if(fr_vol <= std_vol): continue
 #-------------------------------------------------------------------------------
-  v_p_calc, v_m_calc, p_p_calc, p_m_calc, l_p_calc, l_m_calc = 0, 0, 0, 0, 0, 0
-  v_p_add, v_m_add, p_p_add, p_m_add, l_p_add, l_m_add = [], [], [], [], [], []
-
-  for mx in range(len(c_list[:lx])):
-    if(h_list[mx] >= max(h_list[:lx])): break
-  for mn in range(len(c_list[:lx])):
-    if(l_list[mn] <= min(l_list[:lx])): break
-
-  for m in range(len(c_list[:lx])):
-    if(h_list[m] == l_list[m]): diff_per = 0
-    else: diff_per = (c_list[m] - o_list[m]) / (h_list[m] - l_list[m])
-    if(diff_per > 0):
-      v_p_calc = v_list[m] * diff_per
-      p_p_calc = p_list[m] * diff_per
-      l_p_calc = c_list[m] - o_list[m]
-      v_m_calc, p_m_calc, l_m_calc = 0, 0, 0
-    elif(diff_per < 0):
-      v_m_calc = v_list[m] * diff_per
-      p_m_calc = p_list[m] * diff_per
-      l_m_calc = c_list[m] - o_list[m]
-      v_p_calc, p_p_calc, l_p_calc = 0, 0, 0
-    else:
-      v_p_calc, p_p_calc = 0, 0
-      v_m_calc, p_m_calc = 0, 0
-      l_p_calc, l_m_calc = 0, 0
-    v_p_add.append(v_p_calc) 
-    p_p_add.append(p_p_calc)
-    v_m_add.append(v_m_calc) 
-    p_m_add.append(p_m_calc)
-    l_p_add.append(l_p_calc)
-    l_m_add.append(l_m_calc)
-
-  v_p_sum, p_p_sum, v_m_sum, p_m_sum = sum(v_p_add), sum(p_p_add), sum(v_m_add), sum(p_m_add)
-  l_p_sum, l_m_sum = sum(l_p_add), sum(l_m_add)
-
-  v_sum, p_sum = v_p_sum + v_m_sum, p_p_sum + p_m_sum
-  v_p_per = v_p_sum / (v_p_sum + abs(v_m_sum)) * 100
-  p_p_per = p_p_sum / (p_p_sum + abs(p_m_sum)) * 100
-  l_p_per = l_p_sum / (l_p_sum + abs(l_m_sum)) * 100
-  gap_per = (now_price - opn_price) / (max_price - min_price) * 100
-  liner_per = (now_price - min_price) / (max_price - min_price) * 100
-  if(min(l_p_per, v_p_per, p_p_per) > 50): order_position = 1
-  elif(max(l_p_per, v_p_per, p_p_per) < 50): order_position = 2
-  else: order_position = 9
-
-  if(v_value_list != 0):
-    if(v_value_list[0] != order_position) and (order_position in (1, 2)): step_p = 1    
-  if(nmx_diff < min_diff): limit_diff, step_p = std_diff, 0
-        
-  mx_time = float(t_list[mx] * 0.001)
+        for bk in range(fr,len(v_list)):
+          bk_vol = sum(v_list[fr:bk])
+          if(bk_vol > std_vol):
+            bk_max = max(h_list[fr:bk])
+            bk_min = min(l_list[fr:bk])
+            bk_diff = bk_max - bk_min
+            bk_xnum = h_list[fr:bk].index(bk_max) + fr
+            bk_nnum = l_list[fr:bk].index(bk_min) + fr
+            break
+#-------------------------------------------------------------------------------
+        if(bk_vol <= std_vol): continue
+#-------------------------------------------------------------------------------
+        upp_max, low_min = max(fr_max, bk_max), min(fr_min, bk_min)  
+        order_position = 9
+        if(o_list[fr] < c_list[0]):
+          order_position = 11
+          cal_diff = abs(c_list[0] - low_min)
+          if(cal_diff == 0): cal_lever = 100
+          else: cal_lever = round(c_list[0] * 0.5 / cal_diff,2)
+          limit_diff = cal_diff
+        if(o_list[fr] > c_list[0]):
+          order_position = 22
+          cal_diff = abs(c_list[0] - upp_max)
+          if(cal_diff == 0): cal_lever = 100
+          else: cal_lever = round(c_list[0] * 0.5 / cal_diff,2)
+          limit_diff = cal_diff
+            
+        c_selection = 0
+        if(cal_lever <= 10) and (cal_lever >= 5): c_selection = 9
+        if(order_position == 11) and (c_selection == 9): order_position = 1
+        if(order_position == 22) and (c_selection == 9): order_position = 2
+        if(cal_lever > 10): continue
+        break
+    if(cal_lever > 10): continue
+    if(min(fr_vol, bk_vol) > std_vol): break
+#-------------------------------------------------------------------------------
+  if(order_position == 1): l_next_price, s_next_price = c_list[0], low_min
+  if(order_position == 2): l_next_price, s_next_price = upp_max, c_list[0]
+  mx_time = float(t_list[xnum] * 0.001)
   mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
-  mn_time = float(t_list[mn] * 0.001)
+  mn_time = float(t_list[nnum] * 0.001)
   mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
-  s_value_list = [step_p, round(liner_per,2), round(v_p_per,2), round(p_p_per,2), round(l_p_per,2)]
-  v_value_list = [order_position, maxd_per, mx_server_time, mn_server_time]
+  s_value_list = [l_next_price, s_next_price, cal_lever]
+  v_value_list = [itv, mx_server_time, mn_server_time]
 #-------------------------------------------------------------------------------
-  order_return = [open_order_condition, limit_diff, s_value_list, v_value_list]
+  order_return = [order_position, limit_diff, s_value_list, v_value_list]
+  return(order_return)
+###############################################################################
+################################################################################
+def order_calc(sym_bol, apply_time, order_side, ent_price, diff_gap, sym_lever, stop_condition):
+  order_position = 9
+#-------------------------------------------------------------------------------
+  itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720]
+  for itv in itv_list:
+#-------------------------------------------------------------------------------
+    now_time = int(time.time())
+    cal_time = (now_time - (itv * 60 * 1000)) * 1000
+    if(cal_time > apply_time): continue
+    get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
+    time.sleep(1)
+    kline = pd.DataFrame(get_kline)
+    t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
+    for i in range(len(kline[0])):          
+      t_list.append(int(kline[0][i]))
+      o_list.append(float(kline[1][i]))
+      h_list.append(float(kline[2][i]))
+      l_list.append(float(kline[3][i]))
+      c_list.append(float(kline[4][i]))
+      v_list.append(float(kline[5][i]))
+      p_list.append(float(kline[6][i]))
+      if(int(kline[0][i]) < apply_time): break
+#-------------------------------------------------------------------------------
+    std_diff = ent_price * 0.5 / 5
+    limit_diff = diff_gap
+    calc_max, calc_min = max(h_list), min(l_list)
+    max_diff = calc_max - calc_min
+    xnum = h_list.index(max(h_list))
+    nnum = l_list.index(min(l_list))
+    l_next_price, s_next_price = calc_max, calc_min
+      
+    if(stop_condition == 0):
+      if(order_side == 1):
+        order_position = 12
+        if(calc_min > (ent_price - diff_gap)): calc_min = ent_price - diff_gap
+        l_next_price, s_next_price = calc_min + diff_gap, calc_min
+      if(order_side == 2):
+        order_position = 21
+        if(calc_max < (ent_price + diff_gap)): calc_max = ent_price + diff_gap
+        l_next_price, s_next_price = calc_max, calc_max - diff_gap
+      if(order_side == 3):
+        order_position = 12
+        l_next_price, s_next_price = calc_min + diff_gap, calc_min
+      if(order_side == 4):
+        order_position = 21
+        l_next_price, s_next_price = calc_max, calc_max - diff_gap
+      
+    if(stop_condition == 1):
+      if(order_side == 1):
+        if((ent_price - diff_gap) > calc_min): order_position = 13
+        else: order_position = 14
+        l_next_price, s_next_price = ent_price - diff_gap, calc_min
+      if(order_side == 2):
+        if((ent_price + diff_gap) < calc_max): order_position = 24
+        else: order_position = 23
+        l_next_price, s_next_price = calc_max, ent_price + diff_gap
+
+      if(order_side == 3):
+        l_next_price, s_next_price = c_list[0] + diff_gap, c_list[0]
+        if((c_list[0] + (diff_gap * 0.0)) < ent_price):
+          order_position = 32
+      if(order_side == 4):
+        l_next_price, s_next_price = c_list[0], c_list[0] - diff_gap
+        if((c_list[0] - (diff_gap * 0.0)) > ent_price):
+          order_position = 41
+      
+    mx_time = float(t_list[xnum] * 0.001)
+    mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
+    mn_time = float(t_list[nnum] * 0.001)
+    mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
+    s_value_list = [l_next_price, s_next_price, calc_max, calc_min]
+    v_value_list = [itv, mx_server_time, mn_server_time]
+    break
+#-------------------------------------------------------------------------------
+  order_return = [order_position, limit_diff, s_value_list, v_value_list]
+  return(order_return)
+#-------------------------------------------------------------------------------
+################################################################################
+def recycle_calc(sym_bol, apply_time):
+  order_position = 9
+#-------------------------------------------------------------------------------
+  itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720]
+  for itv in itv_list:
+#-------------------------------------------------------------------------------
+    now_time = int(time.time())
+    cal_time = (now_time - (itv * 60 * 1000)) * 1000
+    if(cal_time > apply_time): continue
+    get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
+    time.sleep(1)
+    kline = pd.DataFrame(get_kline)
+    t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
+    for i in range(len(kline[0])):          
+      t_list.append(int(kline[0][i]))
+      o_list.append(float(kline[1][i]))
+      h_list.append(float(kline[2][i]))
+      l_list.append(float(kline[3][i]))
+      c_list.append(float(kline[4][i]))
+      v_list.append(float(kline[5][i]))
+      p_list.append(float(kline[6][i]))
+      if(int(kline[0][i]) < apply_time): break
+#-------------------------------------------------------------------------------
+    std_diff = c_list[0] * 0.5 / 5
+    limit_diff = std_diff
+    max_price, min_price = max(h_list), min(l_list)
+    max_diff = max_price - min_price
+    xnum = h_list.index(max_price)
+    nnum = l_list.index(min_price)
+    l_next_price, s_next_price = max_price, min_price
+      
+    mx_time = float(t_list[xnum] * 0.001)
+    mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
+    mn_time = float(t_list[nnum] * 0.001)
+    mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
+    s_value_list = [l_next_price, s_next_price]
+    v_value_list = [itv, mx_server_time, mn_server_time]
+    break
+#-------------------------------------------------------------------------------
+  order_return = [order_position, limit_diff, s_value_list, v_value_list]
   return(order_return)
 #-------------------------------------------------------------------------------
 ###############################################################################
-def calc_part(order_condition, sym_bol, h_price, l_price, lever_diff):
+def calc_part(order_condition, sym_bol, h_price, l_price, std_diff):
     instruments_info = session.get_instruments_info(category="linear",symbol=sym_bol)['result']['list']
     time.sleep(1)
     qty_step = pd.DataFrame(instruments_info)['lotSizeFilter'][0]['qtyStep']
@@ -321,7 +385,7 @@ def calc_part(order_condition, sym_bol, h_price, l_price, lever_diff):
 #------------------------------------------------------------------------------
 #pl leverage
 #Liq_price = ent price x (1 + (1 / pl) - mm_rate)
-    lever_point = h_price - lever_diff
+    lever_point = h_price - std_diff
     pl = float(min_lever)
     while True:
         liq_l_p = h_price * (1 - (1 / pl) + mm_rate)
@@ -340,7 +404,7 @@ def calc_part(order_condition, sym_bol, h_price, l_price, lever_diff):
 #-------------------------------------------------------------------------------
 #ps leverage
 #Liq_price = ent price x (1 + (1 / ps) - mm_rate)
-    lever_point = l_price + lever_diff
+    lever_point = l_price + std_diff
     ps = float(min_lever)
     while True:
         liq_s_p = l_price * (1 + (1 / ps) - mm_rate)
@@ -365,75 +429,115 @@ def calc_part(order_condition, sym_bol, h_price, l_price, lever_diff):
     return(calc_return)
 ###############################################################################
 ###############################################################################
-# make rest_item list
 while True:
-  wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
-  my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
-  live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
-  tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
-  avail_usdt = my_usdt - tot_position
+  reset_time = int((int(time.time()) - (7 * 24 * 60 * 60)) * 1000)
+  limit_time = int((int(time.time()) - (6 * 24 * 60 * 60)) * 1000)
+  final_time = int((int(time.time()) - (5 * 24 * 60 * 60)) * 1000)
+
+  wallet = session.get_wallet_balance(accountType="UNIFIED", coin="USDT")['result']['list']
+  coin_info = wallet[0]['coin'][0]
+  my_usdt = float(coin_info['walletBalance'])
+  live_usdt = float(coin_info['equity'])
+  tot_position = float(coin_info['totalPositionIM'])
+  total_order_im = float(coin_info['totalOrderIM'])
+  avail_usdt = my_usdt - (tot_position + total_order_im)
+  time.sleep(1)
 
   max_l_usdt, min_l_usdt, origin_usdt = live_usdt, live_usdt, my_usdt
   max_m_usdt, min_m_usdt = my_usdt, my_usdt
   max_t_position = tot_position
 
   try_item = []
-#  if(avail_usdt < (invest_usdt * 2)):
-#    item_list = session.get_open_orders(category="linear",settleCoin="USDT")['result']['list']
-#    if(item_list == []): rest_item = []
-#    else: rest_item = pd.DataFrame(item_list)['symbol']
-#    for i in range(len(rest_item)):
-#      if(rest_item[i] in try_item): pass
-#      else: try_item.append(rest_item[i])
-      
-#    item_list1 = session.get_positions(category="linear",settleCoin="USDT")['result']['list']
-#    if(item_list1 == []): rest_item1 = []
-#    else: rest_item1 = pd.DataFrame(item_list1)['symbol']
-#    for i in range(len(rest_item1)):
-#      if(rest_item1[i] in try_item): pass
-#      else: try_item.append(rest_item1[i])
-#rest_item = try_item.copy()
+  union_list, inter_list, setdf_list = [], [], []
+  limit_max_num = my_usdt / invest_usdt
+  get_positions = pd.DataFrame(session.get_positions(category="linear",settleCoin="USDT",limit=100)['result']['list'])
+  time.sleep(1)
+  if get_positions.empty: long_list, short_list = [], []
+  else:
+    long_list = get_positions[(get_positions['positionIdx'] == 1)]
+    long_list = long_list['symbol'].unique().tolist()
+    short_list = get_positions[(get_positions['positionIdx'] == 2)]
+    short_list = short_list['symbol'].unique().tolist()
+    union_list = get_positions['symbol'].unique().tolist()
+
+  try_list = union_list.copy()
 #-------------------------------------------------------------------------------
-  first_time = int(time.time())
+  all_orders = []
+  cursor = None
+  while True:
+    res = session.get_open_orders(category="linear", settleCoin="USDT", orderFilter='StopOrder', limit=50, cursor=cursor)
+    data = res["result"]["list"]
+    all_orders.extend(data)
+    cursor = res["result"]["nextPageCursor"]
+    if not cursor: break
+  open_orders = pd.DataFrame(all_orders)
+  time.sleep(1)
+  if open_orders.empty: check_order_list = []
+  else: check_order_list = open_orders['symbol'].unique().tolist()
+  print('check_order_list:',len(check_order_list))
+
+  for sym_bol in check_order_list:
+    if(sym_bol not in try_list):
+
+      res = session.get_closed_pnl(category="linear", symbol=sym_bol, limit=1)
+      closed_pnl = pd.DataFrame(res['result']['list'])
+      if closed_pnl.empty: last_pnl = 0
+      else: last_pnl = float(closed_pnl['closedPnl'].iloc[0])
+      time.sleep(1)
+      try_list.append(sym_bol)
+      if(last_pnl > 0):
+        session.cancel_all_orders(category="linear", symbol=sym_bol)
+  for sym_bol in try_list:
+    if(sym_bol not in check_order_list): check_order_list.append(sym_bol)
+#-------------------------------------------------------------------------------
+  l_order_num = len(long_list)
+  s_order_num = len(short_list)
+  secure_usdt = max(l_order_num, s_order_num) * invest_usdt * 0.5
+  avail_order_num = int((avail_usdt - secure_usdt) / (invest_usdt * 2))
+#-------------------------------------------------------------------------------
+#  first_time = int(time.time())
 #-------------------------------------------------------------------------------
 # add item list
-  ordered_item = 10
+  ordered_item = 20
   #wish_item_no = 15
-  wish_item_no = 10
-  if(wish_item_no > len(try_item)):
+  wish_item_no = 100
+  if(avail_order_num > 0) and (ordered_item > len(try_list)):
     tickers = session.get_tickers(category="linear")['result']['list']
-    symbol_list = (pd.DataFrame(tickers)['symbol'])
-    turnover_list = (pd.DataFrame(tickers)['turnover24h']).astype(float)
-    price_list = (pd.DataFrame(tickers)['lastPrice']).astype(float)
-    diff_list = (pd.DataFrame(tickers)['price24hPcnt']).astype(float)  
-    values = pd.concat([symbol_list,turnover_list,price_list,diff_list],axis=1)
-    sort_list = values.sort_values('price24hPcnt',key=lambda x: x.abs(),ignore_index=True,ascending=False)
-    added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e+07)]
+    df = pd.DataFrame(tickers)
+    df['turnover24h'] = df['turnover24h'].astype(float)
+    df['lastPrice'] = df['lastPrice'].astype(float)
+    df['price24hPcnt'] = df['price24hPcnt'].astype(float)
+    sort_list = df.sort_values('price24hPcnt', key=lambda x: x.abs(), ascending=False, ignore_index=True)
+    added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e7)]
+#  added_list = sort_list[(sort_list['lastPrice'] > 0.01) & (sort_list['lastPrice'] < 2) & (sort_list['turnover24h'] > 3e+07)]
+#  added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2))]
+    added_symbols = added_list["symbol"].tolist()
 
-    wish_item_no = len(added_list) + len(try_item)
-#  if(wish_item_no > 15): wish_item_no = 15
-    if(wish_item_no > 10): wish_item_no = 10
-    i, j = 0, 0
-    while len(try_item) < wish_item_no:
-      while i < len(try_item):
-        if(j >= len(added_list)): break
-        elif(try_item[i] == added_list.iloc[j]['symbol']):
-          j = j + 1
-          i = 0
-        elif(try_item[i] != added_list.iloc[j]['symbol']): i = i + 1
-
-      if(j >= len(added_list)): break
-      else: try_item.append(added_list.iloc[j]['symbol'])
-      i = 0
+    del_list = session.get_announcement(locale="en-US",type='Delistings',tag='Derivatives')['result']['list']
+    if(del_list == []): title_list = []
+    else: title_list = [item['title'] for item in del_list]
+    all_words = []
+    for title in title_list:
+      all_words.extend(re.findall(r'\b\w+\b', title)) 
+    uppercase_words = {word for word in all_words if word.isupper()}
+    final_del_list = sorted(uppercase_words)
+   
+    added_symbols = [x for x in added_symbols if x not in try_list]
+    added_symbols = [x for x in added_symbols if x not in final_del_list]
+    added_symbols = [x for x in added_symbols if 'USDT' in x]
+    time.sleep(1)
+    print('added_symbols:',len(added_symbols))
+    if(added_symbols != []): try_list.extend(added_symbols)
+    print('added_symbols:',len(added_symbols))
 #-------------------------------------------------------------------------------
-#print(try_item)
+  try_item = try_list.copy()
+  print('try_item:',len(try_item))
 #-------------------------------------------------------------------------------
   order_usdt, time_t, limit_diff_p = [], [], []
   max_margin, min_margin, max_pnl = [], [], []
   order_condition, pre_condition, value_s, value_s_list = [], [], [], []
   value_v, value_v_list, value_p, value_p_list = [], [], [], []
   half_condition, closed_order, wish_price, order_info = [], [], [], []
-  order_v_add, order_vn_add, order_p_add, keep_item = [], [], [], []
 
   i = 0
   while i < len(try_item):
@@ -442,749 +546,520 @@ while True:
     order_condition.append(0), pre_condition.append(0), value_s.append(0), value_s_list.append(0)
     value_v.append(0), value_v_list.append(0), value_p.append(0), value_p_list.append(0)
     half_condition.append(0), closed_order.append(0), wish_price.append(0), order_info.append(0)
-    order_v_add.append(0), order_vn_add.append(0), order_p_add.append(0), keep_item.append(0)
     i = i + 1
 #-------------------------------------------------------------------------------
-  i = 0
-  while i < len(try_item):
-    keep_item[i] = 1
-    i = i + 1
-#-------------------------------------------------------------------------------
-  btc_info=session.get_tickers(category="linear",symbol='BTCUSDT')['result']['list']
-  btc_price = float(pd.DataFrame(btc_info)['lastPrice'][0])
-  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'order_id_Equity = ',round(live_usdt,2), 'My Wallet = ', round(my_usdt,2),'BTCUSDT = ',btc_price}"
-#  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'Test-JQ_BTCUSDT = ',btc_price}"
-  requests.get(url).json() # this sends the message  max_usdt = live_usdt
-  url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'new_item_list:',try_item}"
-  requests.get(url).json() # this sends the message
-###############################################################################
-  while True:
-#-------------------------------------------------------------------------------
-    wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
-    time.sleep(1)
-    my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
-    live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
-    tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
-    avail_usdt = my_usdt - tot_position
-
-    if(max_l_usdt <= live_usdt): max_l_usdt = live_usdt
-    if(min_l_usdt >= live_usdt): min_l_usdt = live_usdt
-    if(max_m_usdt <= my_usdt): max_m_usdt = my_usdt
-    if(min_m_usdt >= my_usdt): min_m_usdt = my_usdt
-    if(max_t_position <= tot_position): max_t_position = tot_position
-
+  if(try_item != []):  
     last_time = int(time.time())
+    num = 0
+#    print(session.get_server_time())  
 ###############################################################################
-    for item in try_item:
-      item_no = try_item.index(item)
-      sym_bol=item
+    for sym_bol in try_item:
+      item_no = try_item.index(sym_bol)
       i_last_time = int(time.time())
       now_time = int(time.time()) * 1000
+      apply_time = reset_time
 ###############################################################################
       sym_info=session.get_tickers(category="linear",symbol=sym_bol)['result']['list']
 #      time.sleep(1)
       sym_price = float(pd.DataFrame(sym_info)['lastPrice'][0])
 
-      res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
-      time.sleep(1)
-      position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
-      if(position_idx == 1):
-        long_qty = float(pd.DataFrame(res_ponse)['size'][0])
-        short_qty = float(pd.DataFrame(res_ponse)['size'][1])
-        l_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
-        s_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-        l_ent_price = pd.DataFrame(res_ponse)['avgPrice'][0]
-        s_ent_price = pd.DataFrame(res_ponse)['avgPrice'][1]
-        l_unpnl = pd.DataFrame(res_ponse)['unrealisedPnl'][0]
-        s_unpnl = pd.DataFrame(res_ponse)['unrealisedPnl'][1]
-        l_position = pd.DataFrame(res_ponse)['positionBalance'][0]
-        s_position = pd.DataFrame(res_ponse)['positionBalance'][1]
-        l_st_loss = pd.DataFrame(res_ponse)['stopLoss'][0]
-        if not l_st_loss.strip(): l_st_loss = 0
-        s_st_loss = pd.DataFrame(res_ponse)['stopLoss'][1]
-        if not s_st_loss.strip(): s_st_loss = 0
-        l_trailing = pd.DataFrame(res_ponse)['trailingStop'][0]
-        if not l_trailing.strip(): l_trailing = 0
-        s_trailing = pd.DataFrame(res_ponse)['trailingStop'][1]
-        if not s_trailing.strip(): s_trailing = 0
-        l_trade_mode = pd.DataFrame(res_ponse)['tradeMode'][0]
-        s_trade_mode = pd.DataFrame(res_ponse)['tradeMode'][1]
-        l_position_im = pd.DataFrame(res_ponse)['positionIM'][0]
-        if not l_position_im.strip(): l_position_im = 0
-        s_position_im = pd.DataFrame(res_ponse)['positionIM'][1]
-        if not s_position_im.strip(): s_position_im = 0
+      res_ponse = session.get_positions(category="linear", symbol=sym_bol)['result']['list']
+      df = pd.DataFrame(res_ponse)
+#-------------------------------------------------------------------------------
+      def clean(x):
+        if x is None or str(x).strip() == "":
+          return 0
+        return x
+#-------------------------------------------------------------------------------
+      position_idx = df['positionIdx'][0]
+      if position_idx == 1: l_idx, s_idx = 0, 1
+      else: l_idx, s_idx = 1, 0
+      long_qty = float(df['size'][l_idx])
+      short_qty = float(df['size'][s_idx])
+      l_sym_lever = df['leverage'][l_idx]
+      s_sym_lever = df['leverage'][s_idx]
+      l_ent_price = df['avgPrice'][l_idx]
+      s_ent_price = df['avgPrice'][s_idx]
+      l_unpnl = df['unrealisedPnl'][l_idx]
+      s_unpnl = df['unrealisedPnl'][s_idx]
+      l_position = df['positionBalance'][l_idx]
+      s_position = df['positionBalance'][s_idx]
+      l_st_loss = clean(df['stopLoss'][l_idx])
+      s_st_loss = clean(df['stopLoss'][s_idx])
+      l_trailing = clean(df['trailingStop'][l_idx])
+      s_trailing = clean(df['trailingStop'][s_idx])
+      l_trade_mode = df['tradeMode'][l_idx]
+      s_trade_mode = df['tradeMode'][s_idx]
+      l_position_im = clean(df['positionIM'][l_idx])
+      s_position_im = clean(df['positionIM'][s_idx])
+      l_created_time = clean(df['updatedTime'][l_idx])
+      s_created_time = clean(df['updatedTime'][s_idx])
+      l_liq_price = clean(df['liqPrice'][l_idx])
+      s_liq_price = clean(df['liqPrice'][s_idx])
+
+      instruments_info = session.get_instruments_info(category="linear", symbol=sym_bol)['result']['list']
+      info = instruments_info[0]
+      qty_step = info['lotSizeFilter']['qtyStep']
+      min_value = info['lotSizeFilter']['minNotionalValue']
+      min_qty = info['lotSizeFilter']['minOrderQty']
+      tick_size = info['priceFilter']['tickSize']
+      max_lever = info['leverageFilter']['maxLeverage']
+      min_lever = info['leverageFilter']['minLeverage']
+      lever_step = info['leverageFilter']['leverageStep']
+      status = info['status']
+
+      wallet = session.get_wallet_balance(accountType="UNIFIED", coin="USDT")['result']['list']
+      coin_info = wallet[0]['coin'][0]
+      my_usdt = float(coin_info['walletBalance'])
+      live_usdt = float(coin_info['equity'])
+      tot_position = float(coin_info['totalPositionIM'])
+      total_order_im = float(coin_info['totalOrderIM'])
+      avail_usdt = my_usdt - (tot_position + total_order_im)
+#-------------------------------------------------------------------------------
+# trade 조회
+      res = session.get_executions(category="linear", symbol=sym_bol, execType="Trade", limit=10)
+      if res.get("retCode") != 0:
+        print("execution API error:", res.get("retMsg"))
+        created_time, exec_price, trade_side, trade_type = 0, 0, 0, "None"
+        continue
       else:
-        long_qty = float(pd.DataFrame(res_ponse)['size'][1])
-        short_qty = float(pd.DataFrame(res_ponse)['size'][0])
-        l_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-        s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
-        l_ent_price = pd.DataFrame(res_ponse)['avgPrice'][1]
-        s_ent_price = pd.DataFrame(res_ponse)['avgPrice'][0]
-        l_unpnl = pd.DataFrame(res_ponse)['unrealisedPnl'][1]
-        s_unpnl = pd.DataFrame(res_ponse)['unrealisedPnl'][0]
-        l_position = pd.DataFrame(res_ponse)['positionBalance'][1]
-        s_position = pd.DataFrame(res_ponse)['positionBalance'][0]
-        l_st_loss = pd.DataFrame(res_ponse)['stopLoss'][1]
-        if not l_st_loss.strip(): l_st_loss = 0
-        s_st_loss = pd.DataFrame(res_ponse)['stopLoss'][0]
-        if not s_st_loss.strip(): s_st_loss = 0
-        l_trailing = pd.DataFrame(res_ponse)['trailingStop'][1]
-        if not l_trailing.strip(): l_trailing = 0
-        s_trailing = pd.DataFrame(res_ponse)['trailingStop'][0]
-        if not s_trailing.strip(): s_trailing = 0
-        l_trade_mode = pd.DataFrame(res_ponse)['tradeMode'][1]
-        s_trade_mode = pd.DataFrame(res_ponse)['tradeMode'][0]
-        l_position_im = pd.DataFrame(res_ponse)['positionIM'][1]
-        if not l_position_im.strip(): l_position_im = 0
-        s_position_im = pd.DataFrame(res_ponse)['positionIM'][0]
-        if not s_position_im.strip(): s_position_im = 0
+        last_trade = pd.DataFrame(res.get("result", {}).get("list", []))
+        if last_trade.empty: created_time, exec_price, trade_side = 0, 0, 0
+        else:
+          last_trade = last_trade.sort_values("execTime", ascending=False)
+          created_time = int(last_trade.iloc[0]["execTime"])
+          exec_price = float(last_trade.iloc[0]["execPrice"])
+          trade_side = last_trade.iloc[0]["side"]
+          trade_type = str(last_trade.iloc[0]["stopOrderType"])
+#      time.sleep(1)
+#-------------------------------------------------------------------------------
+# closed pnl 조회
+      res_pnl = session.get_closed_pnl(category="linear", symbol=sym_bol, startTime=reset_time)
+      if res_pnl.get("retCode") != 0:
+        print("closed_pnl API error:", res_pnl.get("retMsg"))
+        continue
+      else: closed_pnl = pd.DataFrame(res_pnl["result"]["list"])
+      if closed_pnl.empty:
+        last_pnl = 0
+        closed_time, closed_side, closed_pnl, pnl_list, avg_entry_price, avg_exit_price = [], [], [], [], [], []
+      else:
+        closed_pnl = closed_pnl.sort_values("updatedTime", ascending=False)
+        last_pnl = float(closed_pnl.iloc[0]["closedPnl"])
+        closed_time = closed_pnl["updatedTime"].astype(int).tolist()
+        avg_entry_price = closed_pnl["avgEntryPrice"].astype(float).tolist()
+        avg_exit_price = closed_pnl["avgExitPrice"].astype(float).tolist()
+        closed_side_str = closed_pnl["side"].tolist()
+        pnl_list = closed_pnl["closedPnl"].astype(float).tolist()
+               
+# order history 조회
+      apply_time = created_time
+      apply_price = exec_price
+      entry_price, exit_price = 0, 0
+      accum_num, accum_pnl = 0, 0
+      filtered_pri, entry_p_list, exit_p_list = [], [], []
+      res_order = session.get_order_history(category="linear", symbol=sym_bol, startTime=reset_time)
+      if res_order.get("retCode") != 0:
+        print("order_history API error:", res_order.get("retMsg"))
+        continue
+      else:
+        order_history = pd.DataFrame(res_order["result"]["list"])
+        if order_history.empty:
+          open_time, open_side, open_linkid = [], [], []
+        else:
+          stop_type = order_history["stopOrderType"].fillna("")
+          order_type = order_history["orderType"].fillna("")
+          order_open = order_history[
+                       (((order_type.isin(["Market","Limit"])) & (stop_type == "")) | (stop_type == "Stop"))
+                       & (order_history["reduceOnly"] == False)
+                       & (order_history["orderStatus"].isin(["Filled","PartiallyFilled"]))
+                       ]
+          order_open = order_open.sort_values("updatedTime", ascending=False)
+          open_time = order_open["updatedTime"].astype(int).tolist()
+          open_side = order_open["side"].tolist()
+          open_linkid = order_open["orderLinkId"].tolist()
+          order_index = next((i for i,x in enumerate(open_linkid) if 'First' in x), -1)
+          if(order_index == -1):
+            apply_time = created_time
+            apply_price = exec_price
+            accum_num, accum_pnl = 0, 0
+          else:
+            apply_time = open_time[order_index]
+            accum_num = order_index
+            filtered_pnl = [p for t,p in zip(closed_time,pnl_list) if t >= apply_time]
+            accum_pnl = sum(filtered_pnl)
+            entry_p_list = [p for t,p in zip(closed_time,avg_entry_price) if t >= apply_time]
+            if(entry_p_list == []): apply_price, entry_price = exec_price, 0
+            else: apply_price, entry_price = entry_p_list[-1], entry_p_list[-1]
+            exit_p_list = [p for t,p in zip(closed_time,avg_exit_price) if t >= apply_time]
+            if(exit_p_list == []): exit_price = 0
+            else: exit_price = exit_p_list[-1]
+#-------------------------------------------------------------------------------
+      if(entry_price == 0) and (exit_price == 0):
+        if(long_qty != 0): entry_price, exit_price = float(l_ent_price), float(l_st_loss)
+        if(short_qty != 0): entry_price, exit_price = float(s_ent_price), float(s_st_loss)
+      diff_gap = Decimal(str(abs(entry_price - exit_price))) / Decimal(tick_size)
+      diff_gap = float(int(diff_gap) * Decimal(tick_size))
+#-------------------------------------------------------------------------------        
+      m_order_idx, m_order_tp, m_order_st, m_order_qty = [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]         
+      open_orders = pd.DataFrame(session.get_open_orders(category="linear",symbol=sym_bol)['result']['list'])
+      if open_orders.empty:
+         limit_order_list = []
+         stop_order_list = []
+         trail_item = 0
+      else:
+        limit_order_list = open_orders['orderType'].tolist()
+        stop_order_list = open_orders['stopOrderType'].tolist()
+        if('TrailingStop' in stop_order_list): trail_item = 1
+        else: trail_item = 0
 
-      instruments_info = session.get_instruments_info(category="linear",symbol=sym_bol)['result']['list']
-      time.sleep(1)
-      qty_step = pd.DataFrame(instruments_info)['lotSizeFilter'][0]['qtyStep']
-      min_value = pd.DataFrame(instruments_info)['lotSizeFilter'][0]['minNotionalValue']
-      min_qty = pd.DataFrame(instruments_info)['lotSizeFilter'][0]['minOrderQty']
-      tick_size = pd.DataFrame(instruments_info)['priceFilter'][0]['tickSize']
-      max_lever = pd.DataFrame(instruments_info)['leverageFilter'][0]['maxLeverage']
-      min_lever = pd.DataFrame(instruments_info)['leverageFilter'][0]['minLeverage']
-      lever_step = pd.DataFrame(instruments_info)['leverageFilter'][0]['leverageStep']
-      status = instruments_info[0]['status']
-
-      wallet=session.get_wallet_balance(accountType="UNIFIED",coin="USDT")['result']['list']
-      time.sleep(1)
-      my_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['walletBalance'][0])
-      avail_usdt = pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['availableToWithdraw'][0]
-      live_usdt = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['equity'][0])
-      tot_position = float(pd.DataFrame(pd.DataFrame(wallet)['coin'][0])['totalPositionIM'][0])
-      if avail_usdt.strip(): avail_usdt = float(avail_usdt)
-      else: avail_usdt = my_usdt - tot_position
+        stop_df = open_orders[open_orders["stopOrderType"] == "Stop"]
+        if not stop_df.empty:
+            long_row = stop_df[stop_df["positionIdx"] == 1]
+            short_row = stop_df[stop_df["positionIdx"] == 2]
+            if not long_row.empty:
+              m_order_idx[1] = 1
+              m_order_tp[1] = float(long_row.iloc[0]["triggerPrice"])
+              m_order_st[1] = float(long_row.iloc[0]["stopLoss"])
+              m_order_qty[1] = float(long_row.iloc[0]["qty"])
+            if not short_row.empty:
+              m_order_idx[2] = 2
+              m_order_tp[2] = float(short_row.iloc[0]["triggerPrice"])
+              m_order_st[2] = float(short_row.iloc[0]["stopLoss"])
+              m_order_qty[2] = float(short_row.iloc[0]["qty"])      
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-      m_order_type_list = []
-      m_order_idx, m_order_tp, m_order_st = [0, 0, 0], [0, 0, 0], [0, 0, 0]
-      m_get_open=session.get_open_orders(category="linear",symbol=sym_bol,orderFilter='StopOrder')['result']['list']
-      time.sleep(1)
-      if(m_get_open != []):
-        m_order_type = pd.DataFrame(m_get_open)['stopOrderType']
-        for num in range(len(m_order_type)): m_order_type_list.append(m_order_type[num])
-      m_stop_order_list = [(m_stop_order["positionIdx"],m_stop_order["triggerPrice"], m_stop_order["stopLoss"]) for m_stop_order in m_get_open if m_stop_order.get("stopOrderType") == "Stop"]
-      if(m_stop_order_list != []):
-        for list in range(len(m_stop_order_list)):
-          if(m_stop_order_list[list][0] == 1):
-            m_order_idx[1], m_order_tp[1], m_order_st[1] = m_stop_order_list[list][0], float(m_stop_order_list[list][1]), float(m_stop_order_list[list][2])
-          if(m_stop_order_list[list][0] == 2):
-            m_order_idx[2], m_order_tp[2], m_order_st[2] = m_stop_order_list[list][0], float(m_stop_order_list[list][1]), float(m_stop_order_list[list][2])
+      if(long_qty != 0) and (short_qty != 0) and (trade_side != 0):
+        if(trade_side == 'Sell') and (trade_type == 'Stop'):
+          add_order = [sym_bol, "Sell", 1]
+          closed_order_part(add_order)
+          print(sym_bol, "S_Stop_open, L_closed")
+          time.sleep(1)
+        if(trade_side == 'Buy') and (trade_type == 'Stop'):
+          add_order = [sym_bol, "Buy", 2]
+          closed_order_part(add_order)
+          print(sym_bol, "L_Stop_open, S_closed")
+          time.sleep(1)
+        continue
 #-------------------------------------------------------------------------------
-      l_order_type_list = []
-      l_order_idx, l_order_tp, l_order_st = [0, 0, 0], [0, 0, 0], [0, 0, 0]
-      l_get_open=session.get_open_orders(category="linear",symbol=sym_bol,orderFilter='Order')['result']['list']
-      time.sleep(1)
-      if(l_get_open != []):
-        l_order_type = pd.DataFrame(l_get_open)['orderType']
-        for num in range(len(l_order_type)): l_order_type_list.append(l_order_type[num])
-      l_stop_order_list = [(l_stop_order["positionIdx"],l_stop_order["price"], l_stop_order["stopLoss"]) for l_stop_order in l_get_open if l_stop_order.get("orderType") == "Limit"]
-      if(l_stop_order_list != []):
-        for list in range(len(l_stop_order_list)):
-          if(l_stop_order_list[list][0] == 1):
-            l_order_idx[1], l_order_tp[1], l_order_st[1] = l_stop_order_list[list][0], float(l_stop_order_list[list][1]), float(l_stop_order_list[list][2])
-          if(l_stop_order_list[list][0] == 2):
-            l_order_idx[2], l_order_tp[2], l_order_st[2] = l_stop_order_list[list][0], float(l_stop_order_list[list][1]), float(l_stop_order_list[list][2])
-#-------------------------------------------------------------------------------
-#      if(m_get_open != []): keep_item[item_no] = 1
-      if(long_qty != 0) or (short_qty != 0): keep_item[item_no] = 1
-      else: keep_item[item_no] = 0
-#      if(order_condition[item_no] == 0) and ((long_qty != 0) or (short_qty != 0)): keep_item[item_no] = 1
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-      now_order_state = 0
-      if(long_qty != 0):  now_order_state = 1
-      if(short_qty != 0): now_order_state = 2
-      if(long_qty != 0) and (short_qty != 0): now_order_state = 3
-#      if(long_qty == 0) and (now_order_state != closed_order[item_no]) and ((closed_order[item_no] == 1) or (closed_order[item_no] == 3)):
-#        pnl_list = session.get_closed_pnl(category="linear",symbol=sym_bol,limit=1)['result']['list']
-##        time.sleep(1)
-#        if(pnl_list == []): pnl = [0]
-#        else: pnl = (pd.DataFrame(pnl_list)['closedPnl'])
-#        closed_order_info = [sym_bol, 'Long_closed', round(float(pnl[0]),2), round(my_usdt,2), round(live_usdt,2), order_info[item_no]]
-#        url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={closed_order_info}"
-#        requests.get(url).json() # this sends the message
-#        closed_order[item_no] = 0
-#        order_condition[item_no] = 0
-#      if(short_qty == 0) and (now_order_state != closed_order[item_no]) and ((closed_order[item_no] == 2) or (closed_order[item_no] == 3)):
-#        pnl_list = session.get_closed_pnl(category="linear",symbol=sym_bol,limit=1)['result']['list']
-##        time.sleep(1)
-#        if(pnl_list == []): pnl = [0]
-#        else: pnl = (pd.DataFrame(pnl_list)['closedPnl'])
-#        closed_order_info = [sym_bol, 'Short_closed', round(float(pnl[0]),2), round(my_usdt,2), round(live_usdt,2), order_info[item_no]]
-#        url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={closed_order_info}"
-#        requests.get(url).json() # this sends the message
-
-#      if(long_qty != 0) and (now_order_state != closed_order[item_no]) and (closed_order[item_no] == 0):
-#        opened_order_info = [sym_bol, round(float(l_position_im),1), pre_condition[item_no], order_condition[item_no], order_info[item_no]]
-#        url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#        requests.get(url).json() # this sends the message
-
-#      if(short_qty != 0) and (now_order_state != closed_order[item_no]) and (closed_order[item_no] == 0):
-#        opened_order_info = [sym_bol, round(float(s_position_im),1), pre_condition[item_no], order_condition[item_no], order_info[item_no]]
-#        url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#        requests.get(url).json() # this sends the message
-
-      closed_order[item_no] = now_order_state
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-      if((sum(keep_item) >= ordered_item) and (keep_item[item_no] == 0)) or (status != 'Trading'):
-        if(m_get_open != []):
-          session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-        if(l_get_open != []):
+      if(long_qty != 0) and (float(l_liq_price) > max(float(l_st_loss), m_order_tp[2])):
+        if(float(l_liq_price) != 0) and (float(l_st_loss) != 0) and (m_order_tp[2] != 0):
+          add_order = [sym_bol, "Sell", 1]
+          closed_order_part(add_order)
+          time.sleep(1)
+          print(sym_bol, "l_liq_price_closed","l_liq:",float(l_liq_price), "l_st_loss:",float(l_st_loss), "m_order_tp[2]:", m_order_tp[2])
+          session.cancel_all_orders(category="linear", symbol=sym_bol)
+          continue
+      if(short_qty != 0) and (float(s_liq_price) < min(float(s_st_loss), m_order_tp[1])):
+        if(float(s_liq_price) != 0) and (float(s_st_loss) != 0) and (m_order_tp[1] != 0):
+          add_order = [sym_bol, "Buy", 2]
+          closed_order_part(add_order)
+          time.sleep(1)
+          print(sym_bol, "s_liq_price_closed","s_liq:",float(s_liq_price), "s_st_loss:",float(s_st_loss), "m_order_tp[2]:", m_order_tp[1])
+          session.cancel_all_orders(category="linear", symbol=sym_bol)
+          continue
+#-------------------------------------------------------------------------------        
+#-------------------------------------------------------------------------------        
+      if(trail_item == 1):
+        if("Limit" in limit_order_list):
           session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='Order')
-        order_condition[item_no] = 0
-        order_info[item_no] = 0
-        pass
-      else:
+        if("Stop" in stop_order_list):
+          session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
 #-------------------------------------------------------------------------------
-#START
-#-------------------------------------------------------------------------------
-        if(order_condition[item_no] != 0): pre_condition[item_no] = order_condition[item_no]
-        if(order_condition[item_no] == 0):
-          if(long_qty != 0):  order_condition[item_no] = 'pre_L_open'
-          if(short_qty != 0): order_condition[item_no] = 'pre_S_open'
-          if(long_qty != 0) and (short_qty != 0): order_condition[item_no] = 'pre_Both_open'
-          if(long_qty == 0) and (short_qty == 0) and ((l_get_open != []) or (m_get_open != [])):
-            order_condition[item_no] = 'pre_order'
-#-------------------------------------------------------------------------------
-# order_calc
-        order_value = [sym_bol, sym_price, order_condition[item_no], limit_diff_p[item_no],
-                       value_s_list[item_no], value_v_list[item_no]]
-        order_calc_result = order_calc(order_value)
-#-------------------------------------------------------------------------------
-# order_calc_result
+      if(long_qty == 0) and (short_qty == 0):
+          if("Stop" not in stop_order_list) and ("Limit" not in limit_order_list):
+            search_calc_result = search_calc(sym_bol)
+            order_condition[item_no] = search_calc_result[0]
+            limit_diff_p[item_no] = search_calc_result[1]
+            value_s_list[item_no] = search_calc_result[2]
+            value_v_list[item_no] = search_calc_result[3]
+            if(order_condition[item_no] in (1, 2)): num = num + 1
+          
+      if("Stop" not in stop_order_list) and (trail_item == 0) and (sym_bol in union_list):
+        stop_condition = 0  
+        if(accum_num == 0):
+          if(long_qty != 0) and (short_qty == 0):
+            order_calc_result = order_calc(sym_bol, apply_time, 1, float(l_ent_price), diff_gap, float(l_sym_lever), stop_condition)
+          if(long_qty == 0) and (short_qty != 0):
+            order_calc_result = order_calc(sym_bol, apply_time, 2, float(s_ent_price), diff_gap, float(s_sym_lever), stop_condition)
+        if(accum_num != 0):
+          if(long_qty != 0) and (short_qty == 0):
+            order_calc_result = order_calc(sym_bol, apply_time, 3, float(l_ent_price), diff_gap, float(l_sym_lever), stop_condition)
+          if(long_qty == 0) and (short_qty != 0):
+            order_calc_result = order_calc(sym_bol, apply_time, 4, float(s_ent_price), diff_gap, float(s_sym_lever), stop_condition)
         order_condition[item_no] = order_calc_result[0]
         limit_diff_p[item_no] = order_calc_result[1]
         value_s_list[item_no] = order_calc_result[2]
         value_v_list[item_no] = order_calc_result[3]
+            
+      if("Stop" in stop_order_list) and ("Limit" not in limit_order_list) and (trail_item == 0):
+        stop_condition = 1  
+        if(long_qty != 0) and (short_qty == 0):
+          order_calc_result = order_calc(sym_bol, apply_time, 1, float(l_ent_price), diff_gap, float(l_sym_lever), stop_condition)
+        if(long_qty == 0) and (short_qty != 0):
+          order_calc_result = order_calc(sym_bol, apply_time, 2, float(s_ent_price), diff_gap, float(s_sym_lever), stop_condition)
+        if(long_qty == 0) and (short_qty == 0) and (pnl_list != []) and (pnl_list[0] < 0):
+          if(m_order_idx[1] == 1):
+            order_calc_result = order_calc(sym_bol, apply_time, 3, m_order_tp[1], diff_gap, float(l_sym_lever), stop_condition)
+          if(m_order_idx[2] == 2):
+            order_calc_result = order_calc(sym_bol, apply_time, 4, m_order_tp[2], diff_gap, float(s_sym_lever), stop_condition)
+        order_condition[item_no] = order_calc_result[0]
+        limit_diff_p[item_no] = order_calc_result[1]
+        value_s_list[item_no] = order_calc_result[2]
+        value_v_list[item_no] = order_calc_result[3]
+           
+      if(order_condition[item_no] == 0):
+          recycle_calc_result = recycle_calc(sym_bol, apply_time)
+          order_condition[item_no] = recycle_calc_result[0]
+          limit_diff_p[item_no] = recycle_calc_result[1]
+          value_s_list[item_no] = recycle_calc_result[2]
+          value_v_list[item_no] = recycle_calc_result[3]
+      h_price, l_price = value_s_list[item_no][0], value_s_list[item_no][1]
 #-------------------------------------------------------------------------------
+#START
 #-------------------------------------------------------------------------------
-        h_price, l_price = sym_price, sym_price
-#        hh_price, ll_price = value_s_list[item_no][1] + limit_diff_p[item_no], value_s_list[item_no][2] - limit_diff_p[item_no]
+      if(try_item != []):  
 #-------------------------------------------------------------------------------
-# calc_part_result
-# calc_return = [sym_bol, l_new_lever, s_new_lever]
-        calc_result = calc_part(order_condition[item_no], sym_bol, h_price, l_price, limit_diff_p[item_no])
-#-------------------------------------------------------------------------------
-        if(float(max_lever) >= max(float(calc_result[1]), float(calc_result[2]))):  
+        lever_check = 0
+        if(order_condition[item_no] in (1, 2)) and (value_s_list[item_no][2] < float(max_lever)):
+          lever_check = 1  
+          str_lever = str(value_s_list[item_no][2])
+          apply_lever = str(int(Decimal(str_lever) / Decimal(lever_step)) * Decimal(lever_step))
           if(long_qty == 0) and (short_qty == 0):
-            if(float(calc_result[1]) != float(l_sym_lever)) or (float(calc_result[2]) != float(s_sym_lever)):
-              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=calc_result[2])
+            if(float(apply_lever) != float(l_sym_lever)) or (float(apply_lever) != float(s_sym_lever)):
+              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=apply_lever, sellLeverage=apply_lever)
               time.sleep(1)
-          if(long_qty == 0) and (short_qty != 0) and (float(calc_result[1]) != float(l_sym_lever)):
-              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=calc_result[1], sellLeverage=s_sym_lever)
-              time.sleep(1)
-          if(long_qty != 0) and (short_qty == 0) and (float(calc_result[2]) != float(s_sym_lever)):
-              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=l_sym_lever, sellLeverage=calc_result[2])
-              time.sleep(1)
-
-        res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
-        time.sleep(1)
-        position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
-        if(position_idx == 1):
-          l_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
-          s_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-        else:
-          l_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-          s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
-
-#        if((float(calc_result[1]) * 1.1) < float(l_sym_lever)): l_sym_lever = calc_result[1]
-#        if((float(calc_result[2]) * 1.1) < float(s_sym_lever)): s_sym_lever = calc_result[2]
+                
+          res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
+          time.sleep(1)
+          position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
+          if(position_idx == 1):
+            l_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
+            s_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
+          else:
+            l_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
+            s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
 #-------------------------------------------------------------------------------
+        add_invest_usdt = invest_usdt ** (accum_num + 1)
+        if(accum_num > 5): add_invest_usdt = invest_usdt
+        if(long_qty == 0) and (short_qty == 0):
+          if("Stop" not in stop_order_list) and ("Limit" not in limit_order_list):
+            add_invest_usdt = invest_usdt
+#        add_invest_usdt = invest_usdt
 #-------------------------------------------------------------------------------
-        l_ex_price = str(sym_price + float(tick_size))
+        l_ex_price = str(h_price - float(tick_size))
         l_order_price = str(int(Decimal(l_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-        l_ex_qty = str((invest_usdt * float(l_sym_lever)) / float(l_order_price))
+        l_ex_qty = str((add_invest_usdt * float(l_sym_lever)) / float(l_order_price))
         l_order_qty = str(int(Decimal(l_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        l_tp_ex_price = str(sym_price + (limit_diff_p[item_no] * 2) + float(tick_size))
+        l_tp_ex_price = str(h_price + (limit_diff_p[item_no] * 1.3) + float(tick_size))
         l_tp_price = str(int(Decimal(l_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-        l_st_ex_price = str(sym_price - limit_diff_p[item_no] - float(tick_size))
+        l_st_ex_price = str(h_price - limit_diff_p[item_no] - float(tick_size))
         l_st_price = str(int(Decimal(l_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_order_side = 'Buy'
         l_order_position = 1
-        l_ex_value = float(l_order_qty) * float(l_order_price) * 0.8
+        l_ex_value = float(l_order_qty) * float(l_order_price) * 1.0
+        l_ex_st_per = (abs(float(l_order_price) - float(l_st_price)) * float(l_sym_lever)) / float(l_order_price)
 
-        s_ex_price = str(sym_price + float(tick_size))
+        s_ex_price = str(l_price + float(tick_size))
         s_order_price = str(int(Decimal(s_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-        s_ex_qty = str((invest_usdt * float(s_sym_lever)) / float(s_order_price))
+        s_ex_qty = str((add_invest_usdt * float(s_sym_lever)) / float(s_order_price))
         s_order_qty = str(int(Decimal(s_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        s_tp_ex_price = str(sym_price - (limit_diff_p[item_no] * 2) - float(tick_size))
+        s_tp_ex_price = str(l_price - (limit_diff_p[item_no] * 1.3) - float(tick_size))
+        if(float(s_tp_ex_price) < (l_price * 0.15)): s_tp_ex_price = str(l_price * 0.15)
         s_tp_price = str(int(Decimal(s_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-        s_st_ex_price = str(sym_price + limit_diff_p[item_no] + float(tick_size))
+        s_st_ex_price = str(l_price + limit_diff_p[item_no] + float(tick_size))
         s_st_price = str(int(Decimal(s_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_order_side = 'Sell'
         s_order_position = 2
-        s_ex_value = float(s_order_qty) * float(s_order_price) * 0.8
-
-        if(value_v_list[item_no][0] in (3, 5)):
-            m_l_ex_price = str(h_price + float(tick_size))
-            m_l_order_price = str(int(Decimal(m_l_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-            m_l_ex_qty = str((invest_usdt * float(l_sym_lever)) / float(m_l_order_price))
-            m_l_order_qty = str(int(Decimal(m_l_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-            m_l_st_ex_price = str(l_price - float(tick_size))
-            m_l_st_price = str(int(Decimal(m_l_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-            m_l_order_side = 'Buy'
-            m_l_order_position = 1
-            m_l_ex_value = float(m_l_order_qty) * float(m_l_order_price) * 0.8
-
-            l_l_ex_price = str(l_price - float(tick_size))
-            l_l_order_price = str(int(Decimal(l_l_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-            l_l_ex_qty = str((invest_usdt * float(l_sym_lever)) / float(l_l_order_price))
-            l_l_order_qty = str(int(Decimal(l_l_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-            l_l_st_ex_price = str(ll_price - float(tick_size))
-            l_l_st_price = str(int(Decimal(l_l_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-            l_l_order_side = 'Buy'
-            l_l_order_position = 1
-            l_l_ex_value = float(l_l_order_qty) * float(l_l_order_price) * 0.8
-
-            m_s_order_price, m_s_order_qty, m_s_st_price, m_s_ex_value = 0, 0, 0, 0
-            l_s_order_price, l_s_order_qty, l_s_st_price, l_s_ex_value = 0, 0, 0, 0
-
-        elif(value_v_list[item_no][0] in (4, 6)):
-            l_s_ex_price = str(h_price + float(tick_size))
-            l_s_order_price = str(int(Decimal(l_s_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-            l_s_ex_qty = str((invest_usdt * float(s_sym_lever)) / float(l_s_order_price))
-            l_s_order_qty = str(int(Decimal(l_s_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-            l_s_st_ex_price = str(hh_price + float(tick_size))
-            l_s_st_price = str(int(Decimal(l_s_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-            l_s_order_side = 'Sell'
-            l_s_order_position = 2
-            l_s_ex_value = float(l_s_order_qty) * float(l_s_order_price) * 0.8
-
-            m_s_ex_price = str(l_price - float(tick_size))
-            m_s_order_price = str(int(Decimal(m_s_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-            m_s_ex_qty = str((invest_usdt * float(s_sym_lever)) / float(m_s_order_price))
-            m_s_order_qty = str(int(Decimal(m_s_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-            m_s_st_ex_price = str(h_price + float(tick_size))
-            m_s_st_price = str(int(Decimal(m_s_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
-            m_s_order_side = 'Sell'
-            m_s_order_position = 2
-            m_s_ex_value = float(m_s_order_qty) * float(m_s_order_price) * 0.8
-
-            m_l_order_price, m_l_order_qty, m_l_st_price, m_l_ex_value = 0, 0, 0, 0
-            l_l_order_price, l_l_order_qty, l_l_st_price, l_l_ex_value = 0, 0, 0, 0
-                      
-        else:
-            m_l_order_price, m_l_order_qty, m_l_st_price, m_s_order_price, m_s_order_qty, m_s_st_price, m_l_ex_value, m_s_ex_value = 0, 0, 0, 0, 0, 0, 0, 0
-            l_l_order_price, l_l_order_qty, l_l_st_price, l_s_order_price, l_s_order_qty, l_s_st_price, l_l_ex_value, l_s_ex_value = 0, 0, 0, 0, 0, 0, 0, 0
+        s_ex_value = float(s_order_qty) * float(s_order_price) * 1.0
+        s_ex_st_per = (abs(float(s_order_price) - float(s_st_price)) * float(s_sym_lever)) / float(s_order_price)
 #-------------------------------------------------------------------------------
+        if(order_condition[item_no] not in (0, 9)):
+#        if(order_condition[item_no] in (100, 900)):
 #-------------------------------------------------------------------------------
-        if(order_condition[item_no] == 'pre_order'):
-          if(m_order_st[1] < m_order_tp[1]): order_condition[item_no] = 'pre_L_order'
-          if(l_order_st[1] < l_order_tp[1]): order_condition[item_no] = 'pre_L_order'
-          if(m_order_st[2] > m_order_tp[2]): order_condition[item_no] = 'pre_S_order'
-          if(l_order_st[2] > l_order_tp[2]): order_condition[item_no] = 'pre_S_order'
-          order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-        if(value_v_list[item_no][0] not in (1, 3)):
-          if(l_order_idx[1] == 1):
-            session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='Order')
-            order_condition[item_no] = 'L_order_cancel'
-            time.sleep(1)
-          if(m_order_idx[1] == 1):
-            session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-            order_condition[item_no] = 'L_order_cancel'
-            time.sleep(1)
-
-        if(value_v_list[item_no][0] not in (2, 4)):
-          if(l_order_idx[2] == 2):
-            session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='Order')
-            order_condition[item_no] = 'L_order_cancel'
-            time.sleep(1)
-          if(m_order_idx[2] == 2):
-            session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-            order_condition[item_no] = 'S_order_cancel'
-            time.sleep(1)
-          
-        if(value_v_list[item_no][0] == 1) and (l_order_idx[1] == 1):
-            if(l_order_st[1] > float(l_l_st_price)):
-              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='Order')
-              time.sleep(1)
-              order_condition[item_no] = 'L_limit_order_cancel'
-
-        if(value_v_list[item_no][0] == 4) and (l_order_idx[2] == 2):
-            if(l_order_st[2] < float(l_s_st_price)):
-              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='Order')
-              time.sleep(1)
-              order_condition[item_no] = 'S_limit_order_cancel'
-#-------------------------------------------------------------------------------
-###############################################################################
-        if(long_qty != 0) and (float(l_unpnl) >= (invest_usdt * 0.1)) and (value_v_list[item_no][0] == 2):  
-            add_order = [sym_bol, "Sell", 1]
-            closed_order_part(add_order)
-            time.sleep(1)
-            order_condition[item_no] = 'PF_L_closed'
-            order_info[item_no] = [order_condition[item_no], value_s_list[item_no], value_v_list[item_no]]
-#            opened_order_info = [sym_bol, l_unpnl, order_condition[item_no], order_info[item_no]]
-#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#            requests.get(url).json() # this sends the message
-            
-        if(short_qty != 0) and (float(s_unpnl) >= (invest_usdt * 0.1)) and (value_v_list[item_no][0] == 1):  
-            add_order = [sym_bol, "Buy", 2]
-            closed_order_part(add_order)
-            time.sleep(1)
-            order_condition[item_no] = 'PF_S_closed'
-            order_info[item_no] = [order_condition[item_no], value_s_list[item_no], value_v_list[item_no]]
-#            opened_order_info = [sym_bol, s_unpnl, order_condition[item_no], order_info[item_no]]
-#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#            requests.get(url).json() # this sends the message
-###############################################################################
-#-------------------------------------------------------------------------------
-        res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
-        time.sleep(1)
-        position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
-        if(position_idx == 1):
-          l_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
-          s_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-        else:
-          l_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-          s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
-#-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-#        if(value_s_list[item_no][0] == 1) and (value_v_list[item_no][1] > sym_price > value_v_list[item_no][2]):
-        if(value_s_list[item_no][0] != 0) and (value_v_list[item_no][0] != 0):
-#-------------------------------------------------------------------------------
-#          if(m_get_open == []) and (l_get_open == []):
-#-------------------------------------------------------------------------------
-            if(long_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(l_sym_lever) == float(calc_result[1])):
-                if(value_v_list[item_no][0] == 1) and (float(max_lever) >= float(l_sym_lever)):
-                  if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
-                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price]                  
+          if(order_condition[item_no] == 1) and (lever_check == 1):
+            if(long_qty == 0) and ((add_invest_usdt * 2) < avail_usdt) and (avail_order_num >= num):
+                if(float(max_lever) >= float(l_sym_lever)):
+                  if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0) and (l_ex_st_per < 0.6):
+                    order_linkid = f"{sym_bol}_First_L_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price, order_linkid]
                     order_market_part(add_order)
                     time.sleep(1)
-                    order_condition[item_no] = 'L_market_order'
-                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
-                    opened_order_info = [sym_bol, order_condition[item_no], order_info[item_no]]
-#                    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#                    requests.get(url).json() # this sends the message
-                      
-#                  if(float(min_value) < l_l_ex_value) and (l_order_idx[1] == 0) and (float(l_l_order_qty) != 0):
-#                    add_order = [sym_bol, 'Buy', l_l_order_qty, l_l_order_price, 1, l_l_st_price]
-#                    order_limit_part(add_order)
-#                    time.sleep(1)
-#                  if(float(min_value) < m_l_ex_value) and (m_order_idx[1] == 0) and (float(m_l_order_qty) != 0):
-#                    add_order = [sym_bol, 'Buy', m_l_order_qty, 1, m_l_order_price, 1, m_l_st_price]
-#                    conditional_market_part(add_order)
-#                    time.sleep(1)
-                      
-#                if(value_v_list[item_no][0] == 3):
-#                  if(float(min_value) < l_l_ex_value) and (l_order_idx[1] == 0) and (float(l_l_order_qty) != 0):
-#                    add_order = [sym_bol, 'Buy', l_l_order_qty, l_l_order_price, 1, l_l_st_price]
-#                    order_limit_part(add_order)
-#                    time.sleep(1)
-#                  if(float(min_value) < m_l_ex_value) and (m_order_idx[1] == 0) and (float(m_l_order_qty) != 0):
-#                    add_order = [sym_bol, 'Buy', m_l_order_qty, 1, m_l_order_price, 1, m_l_st_price]
-#                    conditional_market_part(add_order)
-#                    time.sleep(1)
-#                    order_condition[item_no] = 'L3_limit_order'
-#                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
+          if(order_condition[item_no] == 2) and (lever_check == 1):
+            if(short_qty == 0) and ((add_invest_usdt * 2) < avail_usdt) and (avail_order_num >= num):
+                if(float(max_lever) >= float(s_sym_lever)):
+                  if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0) and (s_ex_st_per < 0.6):
+                    order_linkid = f"{sym_bol}_First_S_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price, order_linkid]                  
+                    order_market_part(add_order)
+                    time.sleep(1)
 
-            if(short_qty == 0) and ((invest_usdt * 2) < avail_usdt) and (float(s_sym_lever) == float(calc_result[2])):
-                if(value_v_list[item_no][0] == 2) and (float(max_lever) >= float(s_sym_lever)):
+          if(long_qty != 0) and ((add_invest_usdt * 1) < avail_usdt):
+            if(order_condition[item_no] == 12) and ("Stop" not in stop_order_list):
                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
-                    add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price]                  
+                    order_linkid = f"{sym_bol}_Condition_S_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Sell', s_order_qty, 2, s_order_price, 2, s_tp_price, s_st_price, order_linkid]                  
+                    conditional_market_part(add_order)
+                    time.sleep(1)
+            if(order_condition[item_no] == 13) and ("Limit" not in limit_order_list):
+                  if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
+                    if(float(l_st_loss) != 0):
+                      add_order = [sym_bol, '0', 1]
+                      set_stop_loss_item(add_order)
+                      time.sleep(1)
+                    order_linkid = f"{sym_bol}_Limit_S_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Buy', l_order_qty, l_order_price, 1, l_tp_price, l_st_price, order_linkid]
+                    order_limit_part(add_order)
+                    time.sleep(1)
+
+          if(short_qty != 0) and ((add_invest_usdt * 1) < avail_usdt):
+            if(order_condition[item_no] == 21) and ("Stop" not in stop_order_list):
+                  if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
+                    order_linkid = f"{sym_bol}_Condition_L_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_tp_price, l_st_price, order_linkid]
+                    conditional_market_part(add_order)
+                    time.sleep(1)
+            if(order_condition[item_no] == 24) and ("Limit" not in limit_order_list):
+                  if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
+                    if(float(s_st_loss) != 0):  
+                      add_order = [sym_bol, '0', 2]
+                      set_stop_loss_item(add_order)
+                      time.sleep(1)
+                    order_linkid = f"{sym_bol}_Limit_S_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Sell', s_order_qty, s_order_price, 2, s_tp_price, s_st_price, order_linkid]                  
+                    order_limit_part(add_order)
+                    time.sleep(1)
+
+          if(long_qty == 0) and ((add_invest_usdt * 1) < avail_usdt) and (m_order_idx[2] == 2):
+            if(order_condition[item_no] == 41) and ("Stop" in stop_order_list):
+                  if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
+                    order_linkid = f"{sym_bol}_Market_L_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price, order_linkid]
                     order_market_part(add_order)
                     time.sleep(1)
-                    order_condition[item_no] = 'S_market_order'
-                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
-                    opened_order_info = [sym_bol, order_condition[item_no], order_info[item_no]]
-#                    url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#                    requests.get(url).json() # this sends the message
-                    
-#                  if(float(min_value) < l_s_ex_value) and (l_order_idx[2] == 0) and (float(l_s_order_qty) != 0):
-#                    add_order = [sym_bol, 'Sell', l_s_order_qty, l_s_order_price, 2, l_s_st_price]
-#                    order_limit_part(add_order)
-#                    time.sleep(1)
-#                  if(float(min_value) < m_s_ex_value) and (m_order_idx[2] == 0) and (float(m_s_order_qty) != 0):
-#                    add_order = [sym_bol, 'Sell', m_s_order_qty, 2, m_s_order_price, 2, m_s_st_price]
-#                    conditional_market_part(add_order)
-#                    time.sleep(1)
+          if(short_qty == 0) and ((add_invest_usdt * 1) < avail_usdt) and (m_order_idx[1] == 1):
+            if(order_condition[item_no] == 32) and ("Stop" in stop_order_list):
+                  if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
+                    order_linkid = f"{sym_bol}_Market_S_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price, order_linkid]
+                    order_market_part(add_order)
+                    time.sleep(1)
 
-#                if(value_v_list[item_no][0] == 4):
-#                  if(float(min_value) < l_s_ex_value) and (l_order_idx[2] == 0) and (float(l_s_order_qty) != 0):
-#                    add_order = [sym_bol, 'Sell', l_s_order_qty, l_s_order_price, 2, l_s_st_price]
-#                    order_limit_part(add_order)
-#                    time.sleep(1)
-#                  if(float(min_value) < m_s_ex_value) and (m_order_idx[2] == 0) and (float(m_s_order_qty) != 0):
-#                    add_order = [sym_bol, 'Sell', m_s_order_qty, 2, m_s_order_price, 2, m_s_st_price]
-#                    conditional_market_part(add_order)
-#                    time.sleep(1)
-#                    order_condition[item_no] = 'S4_limit_order'
-#                    order_info[item_no] = [value_s_list[item_no], value_v_list[item_no]]
+          if(short_qty != 0) and ((add_invest_usdt * 1) < avail_usdt) and (m_order_idx[1] == 1):
+            if(m_order_qty[1] > (float(l_order_qty) * 1.5)):
+                if(order_condition[item_no] == 23) and ("Limit" not in limit_order_list):
+                  if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
+                    session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+                    time.sleep(1)
+                    order_linkid = f"{sym_bol}_ReConditon_L_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_tp_price, l_st_price, order_linkid]
+                    conditional_market_part(add_order)
+                    time.sleep(1)
+          if(long_qty != 0) and ((add_invest_usdt * 1) < avail_usdt) and (m_order_idx[2] == 2):
+            if(m_order_qty[2] > (float(s_order_qty) * 1.5)):
+                if(order_condition[item_no] == 14) and ("Limit" not in limit_order_list):
+                  if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
+                    session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+                    time.sleep(1)
+                    order_linkid = f"{sym_bol}_ReConditon_S_{int(time.time()*1000)}"
+                    add_order = [sym_bol, 'Sell', s_order_qty, 2, s_order_price, 2, s_tp_price, s_st_price, order_linkid]                  
+                    conditional_market_part(add_order)
+                    time.sleep(1)
 #-------------------------------------------------------------------------------
-        if(long_qty != 0):
-          ex_act_price = str(float(l_ent_price) + (abs(float(l_ent_price) - float(l_st_loss))))
+#-------------------------------------------------------------------------------
+        if(long_qty != 0) and (accum_pnl >= 0):
+          ex_act_price = str(float(l_ent_price) + (abs(float(l_ent_price) - float(l_st_loss)) * 1.0))
           act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
           if(float(l_trailing) == 0) and (float(act_price) > sym_price):
-            ex_ts_diff = abs(float(l_ent_price) - float(l_st_loss)) * 1.0
+            ex_ts_diff = abs(float(l_ent_price) - float(l_st_loss)) * 0.9
             ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
             add_order = [sym_bol, ts_diff, act_price, 1]
             set_trading_stop_item(add_order)
-#            order_condition[item_no] = 'L_open'
-
-            time.sleep(1)
-#            opened_order_info = [sym_bol, round(float(l_position_im),1), pre_condition[item_no], order_condition[item_no], order_info[item_no]]
-#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#            requests.get(url).json() # this sends the message
-#
-#            if(l_order_idx[1] == 1):
-#              session.cancel_all_orders(category="linear", symbol=sym_bol, orderFilter='Order')
-#              time.sleep(1)
-#            if(m_order_idx[1] == 1):
-#              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-#              time.sleep(1)
 #-------------------------------------------------------------------------------
-        if(short_qty != 0):
-          ex_act_price = str(float(s_ent_price) - (abs(float(s_ent_price) - float(s_st_loss))))
+#          if(accum_pnl < 0) and (abs(accum_pnl * 1.3) < float(l_unpnl)):
+#            ex_ts_diff = abs(float(l_ent_price) - sym_price) * 0.3
+#            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
+#            add_order = [sym_bol, ts_diff, 1]
+#            set_trading_stop_profit(add_order)
+#-------------------------------------------------------------------------------
+        if(short_qty != 0) and (accum_pnl >= 0):
+          ex_act_price = str(float(s_ent_price) - (abs(float(s_ent_price) - float(s_st_loss)) * 1.0))
           act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
           if(float(s_trailing) == 0) and (float(act_price) < sym_price):
-            ex_ts_diff = abs(float(s_ent_price) - float(s_st_loss)) * 1.0
+            ex_ts_diff = abs(float(s_ent_price) - float(s_st_loss)) * 0.9
             ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
             add_order = [sym_bol, ts_diff, act_price, 2]
             set_trading_stop_item(add_order)
-#            order_condition[item_no] = 'S_open'
-
-            time.sleep(1)
-#            opened_order_info = [sym_bol, round(float(s_position_im),1), pre_condition[item_no], order_condition[item_no], order_info[item_no]]
-#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#            requests.get(url).json() # this sends the message
-#
-#            if(l_order_idx[2] == 2):
-#              session.cancel_all_orders(category="linear", symbol=sym_bol, orderFilter='Order')
-#              time.sleep(1)
-#            if(m_order_idx[2] == 2):
-#              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-#              time.sleep(1)
+#-------------------------------------------------------------------------------
+#          if(accum_pnl < 0) and (abs(accum_pnl * 1.3) < float(s_unpnl)):
+#            ex_ts_diff = abs(float(s_ent_price) - sym_price) * 0.3
+#            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
+#            add_order = [sym_bol, ts_diff, act_price, 2]
+#            set_trading_stop_profit(add_order)
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
-          if(float(l_position_im) > (invest_usdt * 1.5)):
+          if(created_time != 0) and (apply_time < limit_time):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
-            order_condition[item_no] = 'Over_order_L_closed'
-            opened_order_info = [sym_bol, pre_condition[item_no], order_condition[item_no], round(float(l_position_im),1)]
-            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-            requests.get(url).json() # this sends the message
-
+            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            time.sleep(1)
+          if(created_time != 0) and (apply_time < final_time) and (float(l_unpnl) > (invest_usdt * 0.1)):
+            add_order = [sym_bol, "Sell", 1]
+            closed_order_part(add_order)
+            time.sleep(1)
+            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            time.sleep(1)
+          if(accum_pnl < 0) and (abs(accum_pnl * 1.3) < float(l_unpnl)):
+            add_order = [sym_bol, "Sell", 1]
+            closed_order_part(add_order)
+            time.sleep(1)
+            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            time.sleep(1)
+          
         if(short_qty != 0):
-          if(float(s_position_im) > (invest_usdt * 1.5)):
+          if(created_time != 0) and (apply_time < limit_time):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
-            order_condition[item_no] = 'Over_order_S_closed'
-            opened_order_info = [sym_bol, pre_condition[item_no], order_condition[item_no], round(float(s_position_im),1)]
-            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-            requests.get(url).json() # this sends the message
-#-------------------------------------------------------------------------------
-##        if(long_qty != 0) and (value_s_list[item_no][0] in (2, 4)) and (value_v_list[item_no][2] > sym_price):
-#        if(long_qty != 0) and (value_v_list[item_no][2] > sym_price):
-#          add_order = [sym_bol, "Sell", 1]
-#          closed_order_part(add_order)
-#          time.sleep(1)
-#          if(float(l_unpnl) > 0): order_condition[item_no] = 'PF_L_closed'
-#          else: order_condition[item_no] = 'SL_L_closed'
-#          opened_order_info = [sym_bol, pre_condition[item_no], order_condition[item_no], round(float(l_position_im),1)]
-#          url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#          requests.get(url).json() # this sends the message
-#
-##        if(short_qty != 0) and (value_s_list[item_no][0] in (1, 3)) and (value_v_list[item_no][1] < sym_price):
-#        if(short_qty != 0) and (value_v_list[item_no][1] < sym_price):
-#          add_order = [sym_bol, "Buy", 2]
-#          closed_order_part(add_order)
-#          time.sleep(1)
-#          if(float(s_unpnl) > 0): order_condition[item_no] = 'PF_S_closed'
-#          else: order_condition[item_no] = 'SL_S_closed'
-#          opened_order_info = [sym_bol, pre_condition[item_no], order_condition[item_no], round(float(s_position_im),1)]
-#          url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={opened_order_info}"
-#          requests.get(url).json() # this sends the message
-#
+            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            time.sleep(1)
+          if(created_time != 0) and (apply_time < final_time) and (float(s_unpnl) > (invest_usdt * 0.1)):
+            add_order = [sym_bol, "Buy", 2]
+            closed_order_part(add_order)
+            time.sleep(1)
+            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            time.sleep(1)
+          if(accum_pnl < 0) and (abs(accum_pnl * 1.3) < float(s_unpnl)):
+            add_order = [sym_bol, "Buy", 2]
+            closed_order_part(add_order)
+            time.sleep(1)
+            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            time.sleep(1)
 ###############################################################################
-        if (long_qty != 0):
-          print(sym_bol,sym_price,'order_condition:',pre_condition[item_no], order_condition[item_no],'now_m:',l_unpnl)
-        elif (short_qty != 0):
-          print(sym_bol,sym_price,'order_condition:',pre_condition[item_no], order_condition[item_no],'now_m:',s_unpnl)
+        current_apply_time = datetime.fromtimestamp(int(apply_time / 1000)) + timedelta(hours=9)
+        if(created_time != 0): trade_time = datetime.fromtimestamp(int(created_time / 1000)) + timedelta(hours=9)
+        else: trade_time = 0
+        if(long_qty != 0) and (short_qty != 0):
+          print(sym_bol,sym_price, 'order_condition:',order_condition[item_no],'l_unpnl:',l_unpnl,'s_unpnl:',s_unpnl)
+        elif(long_qty == 0) and (short_qty != 0):
+          print(sym_bol,sym_price, 'order_condition:',order_condition[item_no],'s_unpnl:',s_unpnl,'s_liq_price:',s_liq_price,'invest_usdt:',add_invest_usdt)
+        elif(long_qty != 0) and (short_qty == 0):
+          print(sym_bol,sym_price, 'order_condition:',order_condition[item_no],'l_unpnl:',l_unpnl,'l_liq_price:',l_liq_price,'invest_usdt:',add_invest_usdt)
         else:
-          print(sym_bol,sym_price,pre_condition[item_no],order_condition[item_no], 'PASS')
-        print('lever_ex_value:',calc_result[1], calc_result[2])
-        print('value_s:',value_s_list[item_no])
-        print('value_v:',value_v_list[item_no])
+          print(sym_bol,sym_price,'order_condition:',order_condition[item_no], 'PASS')
+#        print('value_s:',value_s_list[item_no])
+#        print('value_v:',value_v_list[item_no])
+        print('accum_num:', accum_num, 'accum_pnl:', accum_pnl, 'apply_price:', apply_price, 'apply_time:', current_apply_time)
+        print('last_pnl:', last_pnl, 'diff_gap:', diff_gap, 'trade_time:', trade_time, 'apply_time:', current_apply_time)
 ###############################################################################
-#        if(check_time == return_time):
-#          print(sym_bol,sym_price)
-#          get_item = session.get_tickers(category="linear",symbol=sym_bol)['result']['list']
-#          turn_over = float(pd.DataFrame(get_item)['turnover24h'][0])
-#          if(turn_over < 2e+07):
-#            res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
-#            position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
-#            if(position_idx == 1):
-#              long_qty = float(pd.DataFrame(res_ponse)['size'][0])
-#              short_qty = float(pd.DataFrame(res_ponse)['size'][1])
-#            else:
-#              long_qty = float(pd.DataFrame(res_ponse)['size'][1])
-#              short_qty = float(pd.DataFrame(res_ponse)['size'][0])
-#            if(long_qty != 0):
-#              add_order = [sym_bol, "Sell", 1]
-#              closed_order_part(add_order)
-#              time.sleep(1)
-#              unsatisfied_condition = [sym_bol, "unsatisfied_L_closed"]
-#              url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={unsatisfied_condition}"
-#              requests.get(url).json() # this sends the message
-#            if(short_qty != 0):
-#              add_order = [sym_bol, "Buy", 2]
-#              closed_order_part(add_order)
-#              time.sleep(1)
-#              unsatisfied_condition = [sym_bol, "unsatisfied_S_closed"]
-#              url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={unsatisfied_condition}"
-#              requests.get(url).json() # this sends the message
-#            if(m_order_idx[1] == 1) or (m_order_idx[2] == 2):
-#              session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-#              order_condition[item_no] = 'order_cancel'
-#              time.sleep(1)
 ###############################################################################
-#        time.sleep(2)
-        i_this_time = int(time.time())
-        i_diff_time = i_this_time - i_last_time
-        i_rest_time = int(6 - i_diff_time)
-        if(i_rest_time > 0): time.sleep(i_rest_time)
-###############################################################################
-    this_time = int(time.time())
-    diff_time = this_time - last_time
-    rest_time = int(60 - diff_time)
-    if(rest_time > 0): time.sleep(rest_time)
-    check_time = check_time + 1
-    if(check_time > return_time):
-      run_time = int(time.time())
-      one_cycle = round((run_time - first_time) / (60 * 60),1)
-      first_time = int(time.time())
-      url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'one_cycle(hr):',one_cycle}"
-      requests.get(url).json() # this sends the message
-      check_time = 0
-      break
-###############################################################################
-#      tickers = session.get_tickers(category="linear")['result']['list']
-#      symbol_list = (pd.DataFrame(tickers)['symbol'])
-#      turnover_list = (pd.DataFrame(tickers)['turnover24h']).astype(float)
-#      price_list = (pd.DataFrame(tickers)['lastPrice']).astype(float)
-#      values = pd.concat([symbol_list,turnover_list,price_list],axis=1)
-#      sort_list = values.sort_values('turnover24h',ignore_index=True,ascending=False)
-##      added_list = sort_list[(sort_list['lastPrice'] > 0.01) & (sort_list['lastPrice'] < 2) & (sort_list['turnover24h'] > 3e+07)]
-#      del_df = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e+07)]
-##      del_df = sort_list[(sort_list['turnover24h'] < 2e+07)]
-#      del_list = del_df["symbol"].tolist()
-#-------------------------------------------------------------------------------
-#      print(try_item)
-#      for i in range(len(try_item)):
-#        if(try_item[i] in del_list): 
-#          print(try_item[i])
-#          res_ponse=session.get_positions(category="linear",symbol=try_item[i])['result']['list']
-#          position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
-#          if(position_idx == 1):
-#            long_qty = pd.DataFrame(res_ponse)['size'][0]
-#            short_qty = pd.DataFrame(res_ponse)['size'][1]
-#          else:
-#            long_qty = pd.DataFrame(res_ponse)['size'][1]
-#            short_qty = pd.DataFrame(res_ponse)['size'][0]
-#          if(float(long_qty) != 0):
-#            add_order = [try_item[i], "Sell", 1]
-#            closed_order_part(add_order)
-#            time.sleep(1)
-#            unsatisfied_condition = [try_item[i], unsatisfied_L_closed]
-#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={unsatisfied_condition}"
-#            requests.get(url).json() # this sends the message
-#          if(float(short_qty) != 0):
-#            add_order = [try_item[i], "Buy", 2]
-#            closed_order_part(add_order)
-#            time.sleep(1)
-#            unsatisfied_condition = [try_item[i], unsatisfied_S_closed]
-#            url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={unsatisfied_condition}"
-#            requests.get(url).json() # this sends the message
-
-#          session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-#          order_condition[item_no] = 'order_cancel'
-#          time.sleep(1)
-#-------------------------------------------------------------------------------
-# deleted item
-##      i, j = 0, 0
-##      now_item_no = len(try_item)
-##      while i < len(try_item):
-##        while j < len(del_list):
-##          if(len(try_item) <= i) or (len(del_list) <= j): break
-##          if(try_item[i] == del_list.iloc[j]['symbol']):
-#-------------------------------------------------------------------------------
-##            res_ponse=session.get_positions(category="linear",symbol=try_item[i])['result']['list']
-##            long_qty = float(pd.DataFrame(res_ponse)['size'][0])
-##            short_qty = float(pd.DataFrame(res_ponse)['size'][1])
-##            if(long_qty != 0):
-##                del_long_closed_item(try_item[i])
-##                time.sleep(1)
-##                url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'del_long_closed_item:',try_item[i]}"
-##                requests.get(url).json() # this sends the message
-##            if(short_qty != 0):
-##                del_short_closed_item(try_item[i])
-##                time.sleep(1)
-##                url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'del_short_closed_item:',try_item[i]}"
-##                requests.get(url).json() # this sends the message
-#-------------------------------------------------------------------------------
-##            try_item.remove(try_item[i])
-##            order_usdt.remove(order_usdt[i]), time_t.remove(time_t[i]), limit_diff_p.remove(limit_diff_p[i])
-##            max_margin.remove(max_margin[i]), min_margin.remove(min_margin[i]), max_pnl.remove(max_pnl[i])
-##            order_condition.remove(order_condition[i]), pre_condition.remove(pre_condition[i]), value_s.remove(value_s[i]), value_s_list.remove(value_s_list[i])
-##            value_v.remove(value_v[i]), value_v_list.remove(value_v_list[i]), value_p.remove(value_p[i]), value_p_list.remove(value_p_list[i])
-##            half_condition.remove(half_condition[i]), closed_order.remove(closed_order[i]), wish_price.remove(wish_price[i]), order_info.remove(order_info[i])
-##            order_v_add.remove(order_v_add[i]), order_vn_add.remove(order_vn_add[i]), order_p_add.remove(order_p_add[i]), keep_item.remove(keep_item[i])
-##            j = 0
-##          else:
-##            j = j + 1
-##        i = i + 1
-##        j = 0
-##        if(len(try_item) <= i): break
-#-------------------------------------------------------------------------------
-#    print(try_item)
-#-------------------------------------------------------------------------------
-# added item
-##      if(now_item_no > len(try_item)):
-##        wish_item_no = len(added_list) + len(try_item)
-##        if(wish_item_no > 15): wish_item_no = 15
-##        i, j = 0, 0
-##        while len(try_item) < wish_item_no:
-##          while i < len(try_item):
-##            if(j >= len(added_list)): break
-##            elif(try_item[i] == added_list.iloc[j]['symbol']):
-##              j = j + 1
-##              i = 0
-##            elif(try_item[i] != added_list.iloc[j]['symbol']): i = i + 1
-##          if(j >= len(added_list)): break
-##          else:
-##            try_item.append(added_list.iloc[j]['symbol'])
-##            order_usdt.append(0), time_t.append(0), limit_diff_p.append(0)
-##            max_margin.append(0), min_margin.append(0), max_pnl.append(0)
-##            order_condition.append(0), pre_condition.append(0), value_s.append(0), value_s_list.append(0)
-##            value_v.append(0), value_v_list.append(0), value_p.append(0), value_p_list.append(0)
-##            half_condition.append(0), closed_order.append(0), wish_price.append(0), order_info.append(0)
-##            order_v_add.append(0), order_vn_add.append(0), order_p_add.append(0), keep_item.append(0)
-##          i = 0
-##        url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'new_item_list:',try_item}"
-##        requests.get(url).json() # this sends the message
-##      else:
-##        url = f"https://api.telegram.org/bot{order_id}/sendMessage?chat_id={chat_id}&text={'Not change_item'}"
-##        requests.get(url).json() # this sends the message
-#-------------------------------------------------------------------------------
-#    print(try_item)
-#-------------------------------------------------------------------------------
-###############################################################################
-    korea_tz = pytz.timezone('Asia/Seoul')
-    current_time_korea = datetime.now(korea_tz)
-    current_time = current_time_korea.strftime('%Y-%m-%d %H:%M:%S')
-    print('l_USDT_MAX_MIN :',round(max_l_usdt,2),round(min_l_usdt,2),'live_USDT: ',round(live_usdt,2))
-    print('m_USDT_MAX_MIN :',round(max_m_usdt,2),round(min_m_usdt,2),'my_USDT: ',round(my_usdt,2),'origin_usdt:',round(origin_usdt,2))
-    print('T_POSITION_MAX_NOW :',round(max_t_position,2),round(tot_position,2),'invest_USDT:',round(invest_usdt,1))
-    print(current_time,'check_time =',check_time,'keep_item',sum(keep_item),'Reset')
-#    print(calc_result[0],'try_num:',try_num,'Reset')
-#    print(calc_result[0],'try_num:',try_num,'Reset')
+  korea_tz = pytz.timezone('Asia/Seoul')
+  current_time_korea = datetime.now(korea_tz)
+  current_time = current_time_korea.strftime('%Y-%m-%d %H:%M:%S')
+  current_reset_time = datetime.fromtimestamp(reset_time/1000)
+  current_limit_time = datetime.fromtimestamp(limit_time/1000)
+  print('Live_USDT: ', round(live_usdt,2), 'My_USDT: ', round(my_usdt,2))
+  print("Secure_usdt:", secure_usdt, "Avail_usdt:", round(avail_usdt,2),'invest_USDT:',round(invest_usdt,1))
+  print("Avail_num:", avail_order_num, "L_num:", l_order_num, "S_num:", s_order_num, "Try_num:", len(try_item))
+  print('current_time:',current_time,'reset_time:',current_reset_time,'limit_time:',current_limit_time,'Reset')
