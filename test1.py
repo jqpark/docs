@@ -940,87 +940,108 @@ print('check_order_list:', len(check_order_list))
       diff_gap = Decimal(str(abs(entry_price - exit_price))) / Decimal(tick_size)
       diff_gap = float(int(diff_gap) * Decimal(tick_size))
 #-------------------------------------------------------------------------------        
-      m_order_idx, m_order_tp, m_order_st, m_order_qty = [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]         
-      open_orders = pd.DataFrame(session.get_open_orders(category="linear",symbol=sym_bol)['result']['list'])
+      m_order_idx, m_order_tp, m_order_st, m_order_qty = [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]
+# 1. 미체결 주문 가져오기
+      res_orders = client.futures_get_open_orders(symbol=sym_bol)
+      open_orders = pd.DataFrame(res_orders)
       if open_orders.empty:
-         limit_order_list = []
-         stop_order_list = []
-         trail_item = 0
+        limit_order_list = []
+        stop_order_list = []
+        trail_item = 0
       else:
-        limit_order_list = open_orders['orderType'].tolist()
-        stop_order_list = open_orders['stopOrderType'].tolist()
-        if('TrailingStop' in stop_order_list): trail_item = 1
-        else: trail_item = 0
-
-        stop_df = open_orders[open_orders["stopOrderType"] == "Stop"]
-        if not stop_df.empty:
-            long_row = stop_df[stop_df["positionIdx"] == 1]
-            short_row = stop_df[stop_df["positionIdx"] == 2]
-            if not long_row.empty:
-              m_order_idx[1] = 1
-              m_order_tp[1] = float(long_row.iloc[0]["triggerPrice"])
-              m_order_st[1] = float(long_row.iloc[0]["stopLoss"])
-              m_order_qty[1] = float(long_row.iloc[0]["qty"])
-            if not short_row.empty:
-              m_order_idx[2] = 2
-              m_order_tp[2] = float(short_row.iloc[0]["triggerPrice"])
-              m_order_st[2] = float(short_row.iloc[0]["stopLoss"])
-              m_order_qty[2] = float(short_row.iloc[0]["qty"])      
+    # 2. 타입 리스트 생성 (Binance는 type 필드 하나에 모두 들어있음)
+    # Bybit의 orderType(Limit/Market)과 stopOrderType(Stop/Trailing)이 Binance에선 모두 'type'임
+        limit_order_list = open_orders['type'].tolist()
+        stop_order_list = open_orders['type'].tolist() # 비교를 위해 동일하게 할당
+    # 트레일링 스탑 여부 확인
+      if 'TRAILING_STOP_MARKET' in stop_order_list:
+          trail_item = 1
+      else:
+          trail_item = 0
+    # 3. 'STOP' 또는 'STOP_MARKET' 주문 필터링
+    # Bybit의 stopOrderType == "Stop"과 매칭되는 조건
+      stop_df = open_orders[open_orders["type"].str.contains("STOP")]
+      if not stop_df.empty:
+    # positionSide를 기준으로 롱/숏 행 분리
+          long_row = stop_df[stop_df["positionSide"] == "LONG"]
+          short_row = stop_df[stop_df["positionSide"] == "SHORT"]
+    # 롱 포지션 스탑 정보 (Index 1)
+          if not long_row.empty:
+            m_order_idx[1] = 1
+            # Binance 필드명 매칭: triggerPrice -> stopPrice, qty -> origQty
+            m_order_tp[1] = float(long_row.iloc[0]["stopPrice"])
+            # Binance는 주문 정보에 별도의 stopLoss 필드가 없으므로 stopPrice를 동일하게 넣거나 0 처리
+            m_order_st[1] = float(long_row.iloc[0]["stopPrice"]) 
+            m_order_qty[1] = float(long_row.iloc[0]["origQty"])
+    # 숏 포지션 스탑 정보 (Index 2)
+          if not short_row.empty:
+            m_order_idx[2] = 2
+            m_order_tp[2] = float(short_row.iloc[0]["stopPrice"])
+            m_order_st[2] = float(short_row.iloc[0]["stopPrice"])
+            m_order_qty[2] = float(short_row.iloc[0]["origQty"])
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-      if(long_qty != 0) and (short_qty != 0) and (trade_side != 0):
-        if(trade_side == 'Sell') and (trade_type == 'Stop'):
-          add_order = [sym_bol, "Sell", 1]
-          closed_order_part(add_order)
-          print(sym_bol, "S_Stop_open, L_closed")
-          time.sleep(1)
-        if(trade_side == 'Buy') and (trade_type == 'Stop'):
-          add_order = [sym_bol, "Buy", 2]
-          closed_order_part(add_order)
-          print(sym_bol, "L_Stop_open, S_closed")
-          time.sleep(1)
+      if (long_qty != 0) and (short_qty != 0) and (trade_side != 0):
+    # 1. 최근 체결이 SELL이고, 타입이 STOP 관련인 경우 (롱 포지션 손절/익절 체결 시)
+    # 바이낸스는 대문자 'SELL'을 사용하며, 타입은 'STOP_MARKET' 등으로 들어옵니다.
+        if (trade_side == 'SELL') and ('STOP' in trade_type.upper()):
+            # Bybit의 positionIdx 1(Long)에 해당하는 처리를 위해 리스트 생성
+            add_order = [sym_bol, "SELL", 1] 
+            closed_order_part(add_order)
+            print(f"{sym_bol} S_Stop_open, L_closed (Binance: SELL Stop triggered)")
+            time.sleep(1)
+    # 2. 최근 체결이 BUY이고, 타입이 STOP 관련인 경우 (숏 포지션 손절/익절 체결 시)
+        elif (trade_side == 'BUY') and ('STOP' in trade_type.upper()):
+            # Bybit의 positionIdx 2(Short)에 해당하는 처리를 위해 리스트 생성
+            add_order = [sym_bol, "BUY", 2]
+            closed_order_part(add_order)
+            print(f"{sym_bol} L_Stop_open, S_closed (Binance: BUY Stop triggered)")
+            time.sleep(1)
         continue
-#-------------------------------------------------------------------------------
-      if(long_qty != 0) and (float(l_liq_price) > max(float(l_st_loss), m_order_tp[2])):
-        if(float(l_liq_price) != 0) and (float(l_st_loss) != 0) and (m_order_tp[2] != 0):
-          add_order = [sym_bol, "Sell", 1]
-          closed_order_part(add_order)
-          time.sleep(1)
-          print(sym_bol, "l_liq_price_closed","l_liq:",float(l_liq_price), "l_st_loss:",float(l_st_loss), "m_order_tp[2]:", m_order_tp[2])
-          session.cancel_all_orders(category="linear", symbol=sym_bol)
-          continue
-      if(short_qty != 0) and (float(s_liq_price) < min(float(s_st_loss), m_order_tp[1])):
-        if(float(s_liq_price) != 0) and (float(s_st_loss) != 0) and (m_order_tp[1] != 0):
-          add_order = [sym_bol, "Buy", 2]
-          closed_order_part(add_order)
-          time.sleep(1)
-          print(sym_bol, "s_liq_price_closed","s_liq:",float(s_liq_price), "s_st_loss:",float(s_st_loss), "m_order_tp[2]:", m_order_tp[1])
-          session.cancel_all_orders(category="linear", symbol=sym_bol)
-          continue
 #-------------------------------------------------------------------------------        
       if(long_qty != 0) and (diff_gap == 0):
-          add_order = [sym_bol, "Sell", 1]
+          add_order = [sym_bol, "SELL", 1] 
           closed_order_part(add_order)
           time.sleep(1)
           print(sym_bol, "L_ERROR")
-          session.cancel_all_orders(category="linear", symbol=sym_bol)
+          try:
+            client.futures_cancel_all_open_orders(symbol=sym_bol)
+            print(f"{sym_bol}: 모든 미체결 주문 취소 완료")
+          except Exception as e:
+            print(f"{sym_bol}: 주문 취소 중 오류 발생 (혹은 취소할 주문 없음): {e}")
           continue
       if(short_qty != 0) and (diff_gap == 0):
-          add_order = [sym_bol, "Buy", 2]
+          add_order = [sym_bol, "BUY", 2]
           closed_order_part(add_order)
           time.sleep(1)
           print(sym_bol, "S_ERROR")
-          session.cancel_all_orders(category="linear", symbol=sym_bol)
+          try:
+            client.futures_cancel_all_open_orders(symbol=sym_bol)
+            print(f"{sym_bol}: 모든 미체결 주문 취소 완료")
+          except Exception as e:
+            print(f"{sym_bol}: 주문 취소 중 오류 발생 (혹은 취소할 주문 없음): {e}")
           continue
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------        
       if(trail_item == 1):
-        if("Limit" in limit_order_list):
-          session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='Order')
-        if("Stop" in stop_order_list):
-          session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-        print(sym_bol, "trail_item")
-        continue
+# 1. 일반 주문(Limit/Market)이 있을 때 해당 타입만 취소
+        if ("LIMIT" in [x.upper() for x in limit_order_list]):
+            open_orders = client.futures_get_open_orders(symbol=sym_bol)
+            for order in open_orders:
+        # 일반 주문 타입인 경우만 취소
+                if order['type'] in ['LIMIT', 'MARKET']:
+                    client.futures_cancel_order(symbol=sym_bol, orderId=order['orderId'])
+                    print(f"{sym_bol}: Limit orders canceled")
+# 2. 스탑 주문(Stop/Stop Market)이 있을 때 해당 타입만 취소
+        if any("STOP" in x.upper() for x in stop_order_list):
+            open_orders = client.futures_get_open_orders(symbol=sym_bol)
+            for order in open_orders:
+        # 스탑 관련 타입인 경우만 취소
+                if 'STOP' in order['type']:
+                    client.futures_cancel_order(symbol=sym_bol, orderId=order['orderId'])
+                    print(f"{sym_bol}: Stop orders canceled")
+      print(sym_bol, "trail_item")
+      continue
 #-------------------------------------------------------------------------------
       if(long_qty == 0) and (short_qty == 0):
           if("Stop" not in stop_order_list) and ("Limit" not in limit_order_list):
@@ -1089,18 +1110,31 @@ print('check_order_list:', len(check_order_list))
           apply_lever = str(int(Decimal(str_lever) / Decimal(lever_step)) * Decimal(lever_step))
           if(long_qty == 0) and (short_qty == 0):
             if(float(apply_lever) != float(l_sym_lever)) or (float(apply_lever) != float(s_sym_lever)):
-              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=apply_lever, sellLeverage=apply_lever)
-              time.sleep(1)
+                try:
+    # Binance는 심볼과 레버리지 값 하나만 전달합니다.
+                    client.futures_change_leverage(symbol=sym_bol, leverage=int(apply_lever))
+                    print(f"{sym_bol}: Leverage changed to {apply_lever}")
+                    time.sleep(1)
+                except Exception as e:
+    # 이미 해당 레버리지로 설정되어 있거나, 최대 한도를 초과할 경우 에러가 날 수 있습니다.
+                    print(f"{sym_bol} Leverage setting error: {e}")
                 
-          res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
-          time.sleep(1)
-          position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
-          if(position_idx == 1):
-            l_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
-            s_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-          else:
-            l_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-            s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
+# 1. 포지션 정보 가져오기
+            res_ponse = client.futures_position_information(symbol=sym_bol)
+            time.sleep(1)
+# 2. 데이터프레임 변환
+            df_pos = pd.DataFrame(res_ponse)
+            if not df_pos.empty:
+    # 바이낸스는 심볼에 대해 레버리지가 공통이므로 첫 번째 행의 값을 사용해도 무방합니다.
+    # 하지만 롱/숏 데이터를 명확히 매칭하고 싶다면 positionSide를 확인합니다.
+    # 롱 포지션 데이터에서 레버리지 추출
+                l_lever_val = df_pos[df_pos['positionSide'] == 'LONG']['leverage'].iloc[0]
+    # 숏 포지션 데이터에서 레버리지 추출
+                s_lever_val = df_pos[df_pos['positionSide'] == 'SHORT']['leverage'].iloc[0]
+    # 기존 변수 명칭에 할당
+                l_sym_lever = l_lever_val
+                s_sym_lever = s_lever_val
+    # 참고: 바이낸스 헤지 모드에서는 l_sym_lever와 s_sym_lever 값이 항상 같습니다.
 #-------------------------------------------------------------------------------
         retry_num, retry_condition = 5, 0
         max_ls_usdt = invest_usdt * (2 ** (retry_num))
@@ -1166,17 +1200,6 @@ print('check_order_list:', len(check_order_list))
                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_order_price, 2, s_tp_price, s_st_price, order_linkid]                  
                     conditional_market_part(add_order)
                     time.sleep(1)
-#            if(order_condition[item_no] == 13) and ("Limit" not in limit_order_list):
-#                  if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
-#                    if(float(l_st_loss) != 0):
-#                      add_order = [sym_bol, '0', 1]
-#                      set_stop_loss_item(add_order)
-#                      time.sleep(1)
-#                    order_linkid = f"{sym_bol}_Limit_S_{int(time.time()*1000)}"
-#                    add_order = [sym_bol, 'Buy', l_order_qty, l_order_price, 1, l_tp_price, l_st_price, order_linkid]
-#                    order_limit_part(add_order)
-#                    time.sleep(1)
-
           if(short_qty != 0) and ((add_invest_usdt * 1) < avail_usdt):
             if(order_condition[item_no] == 21) and ("Stop" not in stop_order_list):
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
@@ -1184,23 +1207,29 @@ print('check_order_list:', len(check_order_list))
                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_tp_price, l_st_price, order_linkid]
                     conditional_market_part(add_order)
                     time.sleep(1)
-#            if(order_condition[item_no] == 24) and ("Limit" not in limit_order_list):
-#                  if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
-#                    if(float(s_st_loss) != 0):  
-#                      add_order = [sym_bol, '0', 2]
-#                      set_stop_loss_item(add_order)
-#                      time.sleep(1)
-#                    order_linkid = f"{sym_bol}_Limit_S_{int(time.time()*1000)}"
-#                    add_order = [sym_bol, 'Sell', s_order_qty, s_order_price, 2, s_tp_price, s_st_price, order_linkid]                  
-#                    order_limit_part(add_order)
-#                    time.sleep(1)
 
           if(short_qty != 0) and ((add_invest_usdt * 1) < avail_usdt) and (m_order_idx[1] == 1):
             if((m_order_qty[1] * 1.5) < float(l_order_qty)):
                 if(order_condition[item_no] == 23) and ("Limit" not in limit_order_list):
                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
-                    session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
-                    time.sleep(1)
+#-------------------------------------------------------------------------------
+# 1. 현재 모든 미체결 주문 가져오기
+                    open_orders = client.futures_get_open_orders(symbol=sym_bol)
+# 2. 주문들 중 타입이 'STOP' 혹은 'STOP_MARKET'인 주문 ID만 추출
+# Bybit의 stopOrderType='Stop' 조건과 매칭됩니다.
+                    stop_order_ids = [
+                        order['orderId'] for order in open_orders 
+                        if order['type'] in ['STOP', 'STOP_MARKET']
+                    ]
+# 3. 해당되는 스탑 주문들만 순회하며 취소
+                    for oid in stop_order_ids:
+                        try:
+                            client.futures_cancel_order(symbol=sym_bol, orderId=oid)
+                            print(f"{sym_bol}: Stop order {oid} canceled.")
+                        except Exception as e:
+                            print(f"Error canceling stop order {oid}: {e}")
+                        time.sleep(1)
+#-------------------------------------------------------------------------------
                     order_linkid = f"{sym_bol}_ReConditon_L_{int(time.time()*1000)}"
                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_order_price, 1, l_tp_price, l_st_price, order_linkid]
                     conditional_market_part(add_order)
@@ -1209,7 +1238,24 @@ print('check_order_list:', len(check_order_list))
             if((m_order_qty[2] * 1.5) < float(s_order_qty)):
                 if(order_condition[item_no] == 14) and ("Limit" not in limit_order_list):
                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
-                    session.cancel_all_orders(category="linear", symbol=sym_bol,orderFilter='StopOrder',stopOrderType='Stop')
+#-------------------------------------------------------------------------------
+# 1. 현재 모든 미체결 주문 가져오기
+                    open_orders = client.futures_get_open_orders(symbol=sym_bol)
+# 2. 주문들 중 타입이 'STOP' 혹은 'STOP_MARKET'인 주문 ID만 추출
+# Bybit의 stopOrderType='Stop' 조건과 매칭됩니다.
+                    stop_order_ids = [
+                        order['orderId'] for order in open_orders 
+                        if order['type'] in ['STOP', 'STOP_MARKET']
+                    ]
+# 3. 해당되는 스탑 주문들만 순회하며 취소
+                    for oid in stop_order_ids:
+                        try:
+                            client.futures_cancel_order(symbol=sym_bol, orderId=oid)
+                            print(f"{sym_bol}: Stop order {oid} canceled.")
+                        except Exception as e:
+                            print(f"Error canceling stop order {oid}: {e}")
+                        time.sleep(1)
+#-------------------------------------------------------------------------------
                     time.sleep(1)
                     order_linkid = f"{sym_bol}_ReConditon_S_{int(time.time()*1000)}"
                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_order_price, 2, s_tp_price, s_st_price, order_linkid]                  
@@ -1232,15 +1278,15 @@ print('check_order_list:', len(check_order_list))
                     time.sleep(1)          
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-        if(long_qty != 0) and (accum_pnl >= 0):
+#        if(long_qty != 0) and (accum_pnl >= 0):
 #        if(long_qty != 0):
-          ex_act_price = str(float(l_ent_price) + (abs(float(l_ent_price) - float(l_st_loss)) * 1.0))
-          act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
-          if(float(l_trailing) == 0) and (float(act_price) > sym_price):
-            ex_ts_diff = abs(float(l_ent_price) - float(l_st_loss)) * 0.9
-            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
-            add_order = [sym_bol, ts_diff, act_price, 1]
-            set_trading_stop_item(add_order)
+#          ex_act_price = str(float(l_ent_price) + (abs(float(l_ent_price) - float(l_st_loss)) * 1.0))
+#          act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
+#          if(float(l_trailing) == 0) and (float(act_price) > sym_price):
+#            ex_ts_diff = abs(float(l_ent_price) - float(l_st_loss)) * 0.9
+#            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
+#            add_order = [sym_bol, ts_diff, act_price, 1]
+#            set_trading_stop_item(add_order)
 #-------------------------------------------------------------------------------
 #          if(accum_pnl < 0) and (abs(accum_pnl * 1.3) < float(l_unpnl)):
 #            ex_ts_diff = abs(float(l_ent_price) - sym_price) * 0.3
@@ -1248,15 +1294,15 @@ print('check_order_list:', len(check_order_list))
 #            add_order = [sym_bol, ts_diff, 1]
 #            set_trading_stop_profit(add_order)
 #-------------------------------------------------------------------------------
-        if(short_qty != 0) and (accum_pnl >= 0):
+#        if(short_qty != 0) and (accum_pnl >= 0):
 #        if(short_qty != 0):
-          ex_act_price = str(float(s_ent_price) - (abs(float(s_ent_price) - float(s_st_loss)) * 1.0))
-          act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
-          if(float(s_trailing) == 0) and (float(act_price) < sym_price):
-            ex_ts_diff = abs(float(s_ent_price) - float(s_st_loss)) * 0.9
-            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
-            add_order = [sym_bol, ts_diff, act_price, 2]
-            set_trading_stop_item(add_order)
+#          ex_act_price = str(float(s_ent_price) - (abs(float(s_ent_price) - float(s_st_loss)) * 1.0))
+#          act_price = str(int(Decimal(ex_act_price) / Decimal(tick_size)) * Decimal(tick_size))
+#          if(float(s_trailing) == 0) and (float(act_price) < sym_price):
+#            ex_ts_diff = abs(float(s_ent_price) - float(s_st_loss)) * 0.9
+#            ts_diff = str(int(Decimal(ex_ts_diff) / Decimal(tick_size)) * Decimal(tick_size))
+#            add_order = [sym_bol, ts_diff, act_price, 2]
+#            set_trading_stop_item(add_order)
 #-------------------------------------------------------------------------------
 #          if(accum_pnl < 0) and (abs(accum_pnl * 1.3) < float(s_unpnl)):
 #            ex_ts_diff = abs(float(s_ent_price) - sym_price) * 0.3
@@ -1264,31 +1310,37 @@ print('check_order_list:', len(check_order_list))
 #            add_order = [sym_bol, ts_diff, act_price, 2]
 #            set_trading_stop_profit(add_order)
 #-------------------------------------------------------------------------------
+        def cancel_all_orders(sym_bol):
+            try:
+                res = client.futures_cancel_all_open_orders(symbol=sym_bol)
+                return res
+            except Exception as e:
+                return None
 #-------------------------------------------------------------------------------
         if(long_qty != 0):
           if(created_time != 0) and (apply_time < limit_time):
-            add_order = [sym_bol, "Sell", 1]
+            add_order = [sym_bol, "SELL", 1]
             closed_order_part(add_order)
             time.sleep(1)
-            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            cancel_all_orders(sym_bol)  
             time.sleep(1)
           if(created_time != 0) and (apply_time < final_time) and (float(l_unpnl) > (invest_usdt * 0.1)):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
-            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            cancel_all_orders(sym_bol)  
             time.sleep(1)
           if(accum_pnl < 0) and (abs(accum_pnl * 2.0) < float(l_unpnl)):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
-            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            cancel_all_orders(sym_bol)  
             time.sleep(1)
           if(max_ls_usdt <= abs(accum_pnl + float(l_unpnl))):
             add_order = [sym_bol, "Sell", 1]
             closed_order_part(add_order)
             time.sleep(1)
-            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            cancel_all_orders(sym_bol)  
             time.sleep(1)
             print(sym_bol, "max_ls_usdt OVER")
 
@@ -1298,25 +1350,25 @@ print('check_order_list:', len(check_order_list))
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
-            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            cancel_all_orders(sym_bol)  
             time.sleep(1)
           if(created_time != 0) and (apply_time < final_time) and (float(s_unpnl) > (invest_usdt * 0.1)):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
-            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            cancel_all_orders(sym_bol)  
             time.sleep(1)
           if(accum_pnl < 0) and (abs(accum_pnl * 2.0) < float(s_unpnl)):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
-            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            cancel_all_orders(sym_bol)  
             time.sleep(1)
           if(max_ls_usdt <= abs(accum_pnl + float(s_unpnl))):
             add_order = [sym_bol, "Buy", 2]
             closed_order_part(add_order)
             time.sleep(1)
-            session.cancel_all_orders(category="linear", symbol=sym_bol)
+            cancel_all_orders(sym_bol)  
             time.sleep(1)
             print(sym_bol, "max_ls_usdt OVER")
 ###############################################################################
