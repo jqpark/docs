@@ -173,9 +173,30 @@ def search_calc(sym_bol):
 #-------------------------------------------------------------------------------
     order_position = 9
     max_lever, min_lever = 5, 10
-    max_diff = c_list[0] * 0.5 / max_lever
-    min_diff = c_list[0] * 0.5 / min_lever
+    c_max_diff = (c_list[0] * 0.5 / max_lever) * 4
+    c_min_diff = (c_list[0] * 0.5 / max_lever) * 2
+    c_upp_max = c_list[0] + c_max_diff
+    c_upp_min = c_list[0] + c_min_diff
+    c_low_max = c_list[0] - c_max_diff
+    c_low_min = c_list[0] - c_min_diff
     std_max, std_min = max(h_list), min(l_list)
+    if(c_upp_min < std_max) and (c_low_max > std_min): order_position = 3
+    if(c_upp_max < std_max) and (c_low_min > std_min): order_position = 3
+    if(order_position == 3):
+      for std in range(len(t_list)):
+        upp_max, low_min = max(h_list[:std]), min(l_list[:std])
+        if(upp_max > c_upp_min) and (upp_min < c_low_max):
+          order_position = 1
+        if(upp_max > c_upp_max) and (upp_min < c_low_min):
+          order_position = 2
+        if(order_position in (1, 2)):
+          xnum = h_list.index(upp_max)
+          nnum = l_list.index(low_min)
+          break
+    if(order_position == 10):
+      
+      
+      
     std_diff = std_max - std_min
     std_lever = round(c_list[0] * 0.5 / std_diff,2)
     cal_num = -1
