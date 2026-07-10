@@ -185,64 +185,62 @@ def search_calc(sym_bol):
       v_list.append(float(kline[5][i]))
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
-    max_lever, min_lever, cal_lever = 5, 10, 99
-    max_diff = c_list[0] * 0.5 / max_lever
-    min_diff = c_list[0] * 0.5 / min_lever
-    std_max, std_min = max(h_list), min(l_list)
-    if(max_diff > max(abs(std_max - c_list[0]), abs(std_min - c_list[0]))): continue
-    xnum = h_list.index(std_max)
-    nnum = l_list.index(std_min)
+    max_lever, min_lever, cal_lever, fr_per = 5, 10, 99, 0
+    sta = 0
+    max_diff = c_list[sta] * 0.5 / max_lever
+    min_diff = c_list[sta] * 0.5 / min_lever
+    std_max, std_min = max(c_list[sta:]), min(c_list[sta:])
+    xnum = c_list[sta:].index(std_max) + sta
+    nnum = c_list[sta:].index(std_min) + sta
     max_vol = sum(v_list[min(xnum, nnum):max(xnum, nnum)+1])
-    max_pol = sum(p_list[min(xnum, nnum):max(xnum, nnum)+1])
-    std_diff = std_max - std_min
-    limit_diff = std_diff
-    std_vol = max_vol / std_diff
-    std_pol = max_pol / std_diff
+    le_diff = std_max - std_min
+    std_diff = le_diff / max_vol
+    std_vol = max_vol / le_diff
     h_num, l_num = 0, 0
-    vol_per, pol_per = 99, 99
-    std_list, vol_list, pol_list = [], [], []
-    for std in range(len(t_list)):
-        cal_max, cal_min = max(h_list[:std+1]), min(l_list[:std+1])
-        xnum = h_list.index(cal_max)
-        nnum = l_list.index(cal_min)
-        h_diff = cal_max - c_list[0]
-        l_diff = c_list[0] - cal_min
-        if(h_diff >= min_diff):
-          limit_diff = h_diff
-          cal_vol = sum(v_list[:std + 1])
-          cal_pol = sum(p_list[:std + 1])
-          vol_diff = cal_vol / h_diff
-          pol_diff = cal_pol / h_diff
-          vol_per = vol_diff / std_vol * 100
-          pol_per = pol_diff / std_pol * 100
-          std_list.append(std)
-          vol_list.append(vol_per)
-          pol_list.append(pol_per)
-          cal_lever = round(c_list[0] * 0.5 / limit_diff, 2)
-          order_position = 22
-        if(l_diff >= min_diff):
-          limit_diff = l_diff
-          cal_vol = sum(v_list[:std + 1])
-          cal_pol = sum(p_list[:std + 1])
-          vol_diff = cal_vol / l_diff
-          pol_diff = cal_pol / l_diff
-          vol_per = vol_diff / std_vol * 100
-          pol_per = pol_diff / std_pol * 100
-          std_list.append(std)
-          vol_list.append(vol_per)
-          pol_list.append(pol_per)
-          cal_lever = round(c_list[0] * 0.5 / limit_diff, 2)
+    for std in range(sta,len(t_list)):
+        cal_max, cal_min = max(h_list[sta:std+1]), min(l_list[sta:std+1])
+        h_diff = cal_max - c_list[sta]
+        l_diff = c_list[sta] - cal_min
+        if(h_num == 0) and (max_diff >= h_diff >= min_diff): h_num = std
+        if(l_num == 0) and (max_diff >= l_diff >= min_diff): l_num = std
+        if(h_num != 0) or (l_num != 0): break
+    if(h_num == 0) and (l_num == 0): continue
+        
+    if(h_num != 0):
+      for h_std in range(h_num, len(t_list)):
+        if(l_list[h_std] <= c_list[sta]):
           order_position = 11
-        if(max(h_diff, l_diff) >= max_diff): break
-            
-        sum_list = [x + y for x, y in zip(vol_list, pol_list)]
-        min_index = sum_list.index(min(sum_list))
-        if(max(vol_list[min_index], pol_list[min_index]) < 50):
-      
-    if(order_position in (11, 22)):
-      if(max(vol_per, pol_per) < 50) and (max_lever <= cal_lever <= min_lever):
-        if(order_position == 11): order_position = 1
-        if(order_position == 22): order_position = 2
+          break
+    if(order_position == 11):
+          fr_max = max(h_list[sta:h_std+1])
+          fr_num = h_list[sta:].index(fr_max) + sta
+          fr_vol = sum(v_list[sta:fr_num])
+          ba_vol = sum(v_list[fr_num:h_std+1])
+          fr_per = fr_vol / ba_vol * 100
+          cal_diff = fr_max - c_list[sta]
+          cal_lever = c_list[sta] * 0.5 / cal_diff
+          if(fr_per > 100) and (max_lever <= cal_lever <= min_lever): order_position = 1
+          if(fr_per < 100) and (max_lever <= cal_lever <= min_lever): order_position = 2
+          print(sym_bol, round(cal_lever, 2), round(fr_per, 2))
+
+    if(l_num != 0):
+      for l_std in range(l_num, len(t_list)):
+        if(h_list[l_std] >= c_list[sta]):
+          order_position = 22
+          break
+    if(order_position == 22):
+          fr_max = min(l_list[sta:l_std+1])
+          fr_num = l_list[sta:].index(fr_max) + sta
+          fr_vol = sum(v_list[sta:fr_num])
+          ba_vol = sum(v_list[fr_num:l_std+1])
+          fr_per = fr_vol / ba_vol * 100
+          cal_diff = abs(fr_max - c_list[sta])
+          cal_lever = c_list[sta] * 0.5 / cal_diff
+          if(fr_per < 100) and (max_lever <= cal_lever <= min_lever): order_position = 1
+          if(fr_per > 100) and (max_lever <= cal_lever <= min_lever): order_position = 2
+          print(sym_bol, round(cal_lever, 2), round(fr_per, 2))
+    if(min(h_diff, l_diff) > max_diff): break
+    if(order_position == 9): continue
     break
 #-------------------------------------------------------------------------------
   l_next_price, s_next_price = cal_max, cal_min
@@ -251,7 +249,7 @@ def search_calc(sym_bol):
   mn_time = float(t_list[nnum] * 0.001)
   mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
   s_value_list = [l_next_price, s_next_price, cal_lever]
-  v_value_list = [itv, mx_server_time, mn_server_time, round(vol_per,2), round(pol_per,2)]
+  v_value_list = [itv, mx_server_time, mn_server_time]
 #-------------------------------------------------------------------------------
   order_return = [order_position, limit_diff, s_value_list, v_value_list]
   return(order_return)
@@ -817,18 +815,35 @@ while True:
             if(float(apply_lever) != float(l_sym_lever)) or (float(apply_lever) != float(s_sym_lever)):
               session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=apply_lever, sellLeverage=apply_lever)
               time.sleep(1)
+              lever_check = 3
+          if(order_condition[item_no] == 1) and (long_qty == 0) and (short_qty != 0):
+            if(float(apply_lever) != float(l_sym_lever)):
+              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=apply_lever, sellLeverage=s_sym_lever)
+              time.sleep(1)
+              lever_check = 3
+          if(order_condition[item_no] == 2) and (long_qty != 0) and (short_qty == 0):
+            if(float(apply_lever) != float(s_sym_lever)):
+              session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=l_sym_lever, sellLeverage=apply_lever)
+              time.sleep(1)
+              lever_check = 3
                 
-          res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
-          time.sleep(1)
-          position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
-          if(position_idx == 1):
-            l_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
-            s_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-          else:
-            l_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
-            s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
+          if(lever_check == 3):
+              res_ponse=session.get_positions(category="linear",symbol=sym_bol)['result']['list']
+              time.sleep(1)
+              position_idx = pd.DataFrame(res_ponse)['positionIdx'][0]
+              if(position_idx == 1):
+                l_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
+                s_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
+              else:
+                l_sym_lever = pd.DataFrame(res_ponse)['leverage'][1]
+                s_sym_lever = pd.DataFrame(res_ponse)['leverage'][0]
 
-          if(float(apply_lever) == float(l_sym_lever)) and (float(apply_lever) == float(s_sym_lever)): lever_check = 1
+          if(long_qty == 0) and (short_qty == 0):
+            if(float(apply_lever) == float(l_sym_lever)) and (float(apply_lever) == float(s_sym_lever)): lever_check = 1
+          if(order_condition[item_no] == 1) and (long_qty == 0) and (short_qty != 0):
+            if(float(apply_lever) == float(l_sym_lever)): lever_check = 1
+          if(order_condition[item_no] == 2) and (long_qty != 0) and (short_qty == 0):
+            if(float(apply_lever) == float(s_sym_lever)): lever_check = 1
 #-------------------------------------------------------------------------------
         if(long_qty == 0) and (short_qty == 0) and (order_condition[item_no] in (1, 2)) and (lever_check == 1): num = num + 1
 #-------------------------------------------------------------------------------
