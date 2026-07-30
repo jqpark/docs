@@ -92,7 +92,7 @@ def search_calc(sym_bol):
       p_list.append(float(kline[6][i]))
 #-------------------------------------------------------------------------------
     max_lever, min_lever, cal_lever, fr_per = 5, 10, 99, 0
-    sta = 0
+    sta = 100
     max_diff = c_list[sta] * 0.5 / max_lever
     min_diff = c_list[sta] * 0.5 / min_lever
     cal_max, cal_min = max(h_list[sta:]), min(l_list[sta:])
@@ -121,6 +121,26 @@ def search_calc(sym_bol):
         std_max, std_min = max(h_list[sta:bk+1]), min(l_list[sta:bk+1])
         xnum = h_list[sta:].index(std_max) + sta
         nnum = l_list[sta:].index(std_min) + sta
+        upper_v, lower_v = 0, 0
+        for std in range(sta,bk+1):
+            if(c_list[sta] > h_list[std]): lower_v = lower_v + v_list[std]
+            elif(c_list[sta] < l_list[std]): upper_v = upper_v + v_list[std]
+            else:
+              if(h_list[std] != l_list[std]):
+                  upper_v = upper_v + (abs(c_list[sta] - h_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+                  lower_v = lower_v + (abs(c_list[sta] - l_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+        vol_per = lower_v / (upper_v + lower_v) * 100
+
+        upper_v, lower_v = 0, 0
+        for std in range(bk+1):
+            if(c_list[0] > h_list[std]): lower_v = lower_v + v_list[std]
+            elif(c_list[0] < l_list[std]): upper_v = upper_v + v_list[std]
+            else:
+              if(h_list[std] != l_list[std]):
+                  upper_v = upper_v + (abs(c_list[0] - h_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+                  lower_v = lower_v + (abs(c_list[0] - l_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+        new_per = lower_v / (upper_v + lower_v) * 100
+        
         std_x_diff, std_n_diff = abs(c_list[sta] - std_max), abs(c_list[sta] - std_min)
         if(std_x_diff > std_n_diff) and ((std_x_diff * 0.5) > std_n_diff): order_position = 2
         if(std_x_diff < std_n_diff) and ((std_n_diff * 0.5) > std_x_diff): order_position = 1
@@ -134,7 +154,8 @@ def search_calc(sym_bol):
     limit_diff = cal_diff
     if(cal_diff > max_diff): limit_diff = max_diff
 #    limit_diff = max_diff
-    print(sym_bol, itv, order_position, round(cal_lever,2), std_max, std_min, c_list[0], cal_per)
+    print(sym_bol, itv, order_position, round(vol_per, 2), round(new_per, 2))
+    print(c_list[sta], max(h_list[:sta+1]), min(l_list[:sta+1]), c_list[0])
     break
 #-------------------------------------------------------------------------------
   order_return = [order_position]
