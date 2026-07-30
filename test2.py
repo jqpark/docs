@@ -1,5 +1,5 @@
-#v5_test15-5-18_MAINJQ_260716-0900_217.7_220.0
-#upper_lower diff, limit x, half double, retry_num = 3, invest_usdt 4, profit - 1.3
+#v5_test15-6-3_MAINJQ_260730-1800_159.3
+#upper_lower diff_condition add, limit x, half double, retry_num = 3, invest_usdt 4
 #v5 api
 from pybit.unified_trading import HTTP
 import pandas as pd
@@ -21,7 +21,7 @@ check_order_list = []
 ##############################################################################
 ##############################################################################
 kst = pytz.timezone("Asia/Seoul")
-time_str = "2026-07-13,12:25"
+time_str = "2026-07-29,17:30"
 dt = datetime.strptime(time_str, "%Y-%m-%d,%H:%M")
 dt = kst.localize(dt)
 origin_time = int(dt.timestamp() * 1000)
@@ -189,74 +189,58 @@ def search_calc(sym_bol, accum_num):
     sta = 0
     max_diff = c_list[sta] * 0.5 / max_lever
     min_diff = c_list[sta] * 0.5 / min_lever
-    std_max, std_min = max(c_list[sta:]), min(c_list[sta:])
-    xnum = c_list[sta:].index(std_max) + sta
-    nnum = c_list[sta:].index(std_min) + sta
-    max_vol = sum(v_list[min(xnum, nnum):max(xnum, nnum)+1])
-    le_diff = std_max - std_min
-    limit_diff = le_diff
-    std_diff = le_diff / max_vol
-    std_vol = max_vol / le_diff
-    h_num, l_num = 0, 0
-    for std in range(sta,len(t_list)):
-        cal_max, cal_min = max(h_list[sta:std+1]), min(l_list[sta:std+1])
-        h_diff = cal_max - c_list[sta]
-        l_diff = c_list[sta] - cal_min
-        if(h_diff >= min_diff) and (l_list[sta] <= cal_min): h_num = std
-        if(l_diff >= min_diff) and (h_list[sta] >= cal_max): l_num = std
-        if(h_num != 0) or (l_num != 0): break
-    if(h_num == 0) and (l_num == 0):
-        print(sym_bol, itv)
-        if(max(h_diff, l_diff) > (max_diff * (accum_num + 1))): break
-        else: continue
-        
-    if(h_num != 0):
-      for h_std in range(h_num, len(t_list)):
-        if(l_list[h_std] <= l_list[sta]):
-          order_position = 4
-          break
-    if(order_position == 4):
-          fr_max = max(h_list[sta:h_std+1])
-          fr_num = h_list[sta:].index(fr_max) + sta
-          fr_vol = sum(v_list[sta:fr_num])
-          if(h_list[h_std] == l_list[h_std]): st_vol = v_list[h_std]
-          else: st_vol = v_list[h_std] * abs((h_list[h_std] - l_list[sta]) / (h_list[h_std] - l_list[h_std]))
-          ba_vol = sum(v_list[fr_num:h_std]) + st_vol
-          fr_per = fr_vol / ba_vol * 100
-          cal_diff = fr_max - c_list[sta]
-          cal_lever = c_list[sta] * 0.5 / cal_diff
-          limit_diff = cal_diff
-          if(fr_per > 100): order_position = 4
-#              if(max_lever <= cal_lever <= min_lever): order_position = 1
-#              if(max_lever > cal_lever): order_position = 11
-          if(fr_per < 100): order_position = 2
-#              if(max_lever <= cal_lever <= min_lever): order_position = 2
-#              if(max_lever > cal_lever): order_position = 22
-          print(sym_bol, round(cal_lever, 2), round(fr_per, 2))
-
-    if(l_num != 0):
-      for l_std in range(l_num, len(t_list)):
-        if(h_list[l_std] >= h_list[sta]):
-          order_position = 3
-          break
+    cal_max, cal_min = max(h_list[sta:]), min(l_list[sta:])
+    xnum = h_list[sta:].index(cal_max) + sta
+    nnum = l_list[sta:].index(cal_min) + sta
+    cal_diff = cal_max - cal_min
+    cal_lever = c_list[sta] * 0.5 / cal_diff
+    limit_diff = cal_diff
+    for fr in range(sta,len(t_list)):
+        fr_max, fr_min = max(h_list[sta:fr+1]), min(l_list[sta:fr+1])
+        fr_x_diff, fr_n_diff = abs(c_list[sta] - fr_max), abs(c_list[sta] - fr_min)
+        fr_min_diff, fr_max_diff = min(fr_n_diff, fr_x_diff), max(fr_n_diff, fr_x_diff)
+        if(fr_min_diff > min_diff) and ((fr_max_diff * 0.5) > fr_min_diff):
+            order_position = 0
+            break
+    xnum = h_list[sta:].index(fr_max) + sta
+    nnum = l_list[sta:].index(fr_min) + sta
+    if(order_position == 0):
+      for bk in range(fr,len(t_list)):
+        bk_max, bk_min = max(h_list[fr:bk+1]), min(l_list[fr:bk+1])
+        if(nnum > xnum) and (bk_max >= c_list[0]): order_position = 3
+        if(nnum < xnum) and (bk_min <= c_list[0]): order_position = 3
+        if(order_position == 3): break
+    if(nnum == xnum): break
     if(order_position == 3):
-          fr_max = min(l_list[sta:l_std+1])
-          fr_num = l_list[sta:].index(fr_max) + sta
-          fr_vol = sum(v_list[sta:fr_num])
-          if(h_list[l_std] == l_list[l_std]): st_vol = v_list[l_std]
-          else: st_vol = v_list[l_std] * abs((h_list[sta] - l_list[l_std]) / (h_list[l_std] - l_list[l_std]))
-          ba_vol = sum(v_list[fr_num:l_std]) + st_vol
-          fr_per = fr_vol / ba_vol * 100
-          cal_diff = abs(fr_max - c_list[sta])
-          cal_lever = c_list[sta] * 0.5 / cal_diff
-          limit_diff = cal_diff
-          if(fr_per < 100): order_position = 1
-#              if(max_lever <= cal_lever <= min_lever): order_position = 1
-#              if(max_lever > cal_lever): order_position = 11
-          if(fr_per > 100): order_position = 3
-#              if(max_lever <= cal_lever <= min_lever): order_position = 2
-#              if(max_lever > cal_lever): order_position = 22
-          print(sym_bol, round(cal_lever, 2), round(fr_per, 2))
+        std_max, std_min = max(h_list[sta:bk+1]), min(l_list[sta:bk+1])
+        xnum = h_list[sta:].index(std_max) + sta
+        nnum = l_list[sta:].index(std_min) + sta
+        upper_v, lower_v = 0, 0
+        for std in range(sta,bk+1):
+            if(c_list[sta] > h_list[std]): lower_v = lower_v + v_list[std]
+            elif(c_list[sta] < l_list[std]): upper_v = upper_v + v_list[std]
+            else:
+              if(h_list[std] != l_list[std]):
+                  upper_v = upper_v + (abs(c_list[sta] - h_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+                  lower_v = lower_v + (abs(c_list[sta] - l_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+        vol_per = lower_v / (upper_v + lower_v) * 100
+        
+        std_x_diff, std_n_diff = abs(c_list[sta] - std_max), abs(c_list[sta] - std_min)
+#        if(std_x_diff > std_n_diff) and ((std_x_diff * 0.5) > std_n_diff): order_position = 2
+#        if(std_x_diff < std_n_diff) and ((std_n_diff * 0.5) > std_x_diff): order_position = 1
+        if(vol_per < 50) and ((std_x_diff * 0.5) > std_n_diff): order_position = 2
+        if(vol_per > 50) and ((std_n_diff * 0.5) > std_x_diff): order_position = 1
+        cal_diff = min(std_n_diff, std_x_diff)
+        cal_lever = c_list[sta] * 0.5 / cal_diff
+        limit_diff = cal_diff
+        if(cal_diff > max_diff): limit_diff = max_diff
+        cal_max, cal_min = std_max, std_min
+        cal_per = round((c_list[sta] - cal_min) / (cal_max - cal_min) * 100, 2)
+    if(order_position in (0, 9)): continue
+    limit_diff = cal_diff
+    if(cal_diff > max_diff): limit_diff = max_diff
+#    limit_diff = max_diff
+    print(sym_bol, itv, order_position, round(vol_per, 2), round(cal_per, 2))
     break
 #-------------------------------------------------------------------------------
   l_next_price, s_next_price = cal_max, cal_min
@@ -271,7 +255,7 @@ def search_calc(sym_bol, accum_num):
   return(order_return)
 ###############################################################################
 ################################################################################
-def order_calc(sym_bol, apply_time, order_side, ent_price, diff_gap, sym_lever, stop_condition):
+def order_calc(sym_bol, apply_time, order_side):
   order_position = 9
 #-------------------------------------------------------------------------------
   itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720]
@@ -293,59 +277,89 @@ def order_calc(sym_bol, apply_time, order_side, ent_price, diff_gap, sym_lever, 
       v_list.append(float(kline[5][i]))
       p_list.append(float(kline[6][i]))
       if(int(kline[0][i]) < apply_time): break
+    for sta in range(len(t_list)):
+        if(t_list[sta] < apply_time): break
 #-------------------------------------------------------------------------------
-    std_diff = ent_price * 0.5 / 5
-    limit_diff = diff_gap
-    calc_max, calc_min = max(h_list), min(l_list)
-    max_diff = calc_max - calc_min
-    xnum = h_list.index(max(h_list))
-    nnum = l_list.index(min(l_list))
-    l_next_price, s_next_price = calc_max, calc_min
-      
-    if(stop_condition == 0):
-      if(order_side == 1):
-        order_position = 12
-        if(calc_min > (ent_price - diff_gap)): calc_min = ent_price - diff_gap
-        l_next_price, s_next_price = calc_min + diff_gap, calc_min
-      if(order_side == 2):
-        order_position = 21
-        if(calc_max < (ent_price + diff_gap)): calc_max = ent_price + diff_gap
-        l_next_price, s_next_price = calc_max, calc_max - diff_gap
-      if(order_side == 3):
-        order_position = 12
-        l_next_price, s_next_price = calc_min + diff_gap, calc_min
-      if(order_side == 4):
-        order_position = 21
-        l_next_price, s_next_price = calc_max, calc_max - diff_gap
-      
-    if(stop_condition == 1):
-      if(order_side == 1):
-        order_position = 14
-        l_next_price, s_next_price = calc_min + diff_gap, calc_min
-      if(order_side == 2):
-        order_position = 23
-        l_next_price, s_next_price = calc_max, calc_max - diff_gap
+    max_lever, min_lever, cal_lever, fr_per = 5, 10, 99, 0
+    pre_condition = 0
+#    sta = 100
+    max_diff = c_list[sta] * 0.5 / max_lever
+    min_diff = c_list[sta] * 0.5 / min_lever
+    cal_max, cal_min = max(h_list[sta:]), min(l_list[sta:])
+    xnum = h_list[sta:].index(cal_max) + sta
+    nnum = l_list[sta:].index(cal_min) + sta
+    cal_diff = cal_max - cal_min
+    cal_lever = c_list[sta] * 0.5 / cal_diff
+    limit_diff = cal_diff
+    for fr in range(sta,len(t_list)):
+        fr_max, fr_min = max(h_list[sta:fr+1]), min(l_list[sta:fr+1])
+        fr_x_diff, fr_n_diff = abs(c_list[sta] - fr_max), abs(c_list[sta] - fr_min)
+        fr_min_diff, fr_max_diff = min(fr_n_diff, fr_x_diff), max(fr_n_diff, fr_x_diff)
+        if(fr_min_diff > min_diff) and ((fr_max_diff * 0.5) > fr_min_diff):
+            order_position = 0
+            break
+    xnum = h_list[sta:].index(fr_max) + sta
+    nnum = l_list[sta:].index(fr_min) + sta
+    if(order_position == 0):
+      for bk in range(fr,len(t_list)):
+        bk_max, bk_min = max(h_list[fr:bk+1]), min(l_list[fr:bk+1])
+        if(nnum > xnum) and (bk_max >= c_list[0]): order_position = 3
+        if(nnum < xnum) and (bk_min <= c_list[0]): order_position = 3
+        if(order_position == 3): break
+    if(nnum == xnum): break
+    if(order_position == 3):
+        std_max, std_min = max(h_list[sta:bk+1]), min(l_list[sta:bk+1])
+        xnum = h_list[sta:].index(std_max) + sta
+        nnum = l_list[sta:].index(std_min) + sta
+        upper_v, lower_v = 0, 0
+        for std in range(sta,bk+1):
+            if(c_list[sta] > h_list[std]): lower_v = lower_v + v_list[std]
+            elif(c_list[sta] < l_list[std]): upper_v = upper_v + v_list[std]
+            else:
+              if(h_list[std] != l_list[std]):
+                  upper_v = upper_v + (abs(c_list[sta] - h_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+                  lower_v = lower_v + (abs(c_list[sta] - l_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+        vol_per = lower_v / (upper_v + lower_v) * 100
+        std_x_diff, std_n_diff = abs(c_list[sta] - std_max), abs(c_list[sta] - std_min)
+        if(vol_per < 50) and ((std_x_diff * 0.5) > std_n_diff): pre_condition = 2
+        if(vol_per > 50) and ((std_n_diff * 0.5) > std_x_diff): pre_condition = 1
 
-      if(order_side == 3):
-        l_next_price, s_next_price = c_list[0] + diff_gap, c_list[0]
-        if((c_list[0] + (diff_gap * 0.0)) < ent_price):
-          order_position = 32
-      if(order_side == 4):
-        l_next_price, s_next_price = c_list[0], c_list[0] - diff_gap
-        if((c_list[0] - (diff_gap * 0.0)) > ent_price):
-          order_position = 41
-      
-    mx_time = float(t_list[xnum] * 0.001)
-    mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
-    mn_time = float(t_list[nnum] * 0.001)
-    mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
-    s_value_list = [l_next_price, s_next_price, calc_max, calc_min]
-    v_value_list = [itv, mx_server_time, mn_server_time]
+        if(order_side == order_position):
+          upper_v, lower_v = 0, 0
+          for std in range(bk+1):
+            if(c_list[0] > h_list[std]): lower_v = lower_v + v_list[std]
+            elif(c_list[0] < l_list[std]): upper_v = upper_v + v_list[std]
+            else:
+              if(h_list[std] != l_list[std]):
+                  upper_v = upper_v + (abs(c_list[0] - h_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+                  lower_v = lower_v + (abs(c_list[0] - l_list[std]) / (h_list[std] - l_list[std]) * v_list[std])
+          new_per = lower_v / (upper_v + lower_v) * 100
+          if(new_per < 50) and (pre_condition == 2): order_position = 2
+          if(new_per > 50) and (pre_condition == 1): order_position = 1
+        cal_diff = min(std_n_diff, std_x_diff)
+        cal_lever = c_list[sta] * 0.5 / cal_diff
+        limit_diff = cal_diff
+        if(cal_diff > max_diff): limit_diff = max_diff
+        cal_max, cal_min = std_max, std_min
+        cal_per = round((c_list[sta] - cal_min) / (cal_max - cal_min) * 100, 2)
+    if(order_position in (0, 9)): continue
+    limit_diff = cal_diff
+    if(cal_diff > max_diff): limit_diff = max_diff
+#    limit_diff = max_diff
+    print(sym_bol, itv, order_position, round(vol_per, 2), round(new_per, 2), round(cal_per, 2))
+    print(c_list[sta], max(h_list[:sta+1]), min(l_list[:sta+1]), c_list[0])
     break
+#-------------------------------------------------------------------------------
+  l_next_price, s_next_price = cal_max, cal_min
+  mx_time = float(t_list[xnum] * 0.001)
+  mx_server_time = str(datetime.utcfromtimestamp(mx_time) + timedelta(hours=9))
+  mn_time = float(t_list[nnum] * 0.001)
+  mn_server_time = str(datetime.utcfromtimestamp(mn_time) + timedelta(hours=9))
+  s_value_list = [l_next_price, s_next_price, round(cal_lever, 2)]
+  v_value_list = [itv, mx_server_time, mn_server_time]
 #-------------------------------------------------------------------------------
   order_return = [order_position, limit_diff, s_value_list, v_value_list]
   return(order_return)
-#-------------------------------------------------------------------------------
 ################################################################################
 ###############################################################################
 def calc_part(order_condition, sym_bol, h_price, l_price, std_diff):
@@ -476,12 +490,12 @@ while True:
   l_order_num = len(long_list)
   s_order_num = len(short_list)
   secure_usdt = max(l_order_num, s_order_num) * invest_usdt * 0.5
-  avail_order_num = 20 - len(try_list)
+  avail_order_num = 25 - len(try_list)
 #-------------------------------------------------------------------------------
 #  first_time = int(time.time())
 #-------------------------------------------------------------------------------
 # add item list
-  ordered_item = 20
+  ordered_item = 25
   #wish_item_no = 15
   wish_item_no = 100
   if(avail_order_num > 0) and (ordered_item > len(try_list)):
@@ -811,12 +825,27 @@ while True:
 #         print('last_pnl:', last_pnl, 'diff_gap:', diff_gap, 'trade_time:', trade_time)
 #         continue
 ###############################################################################
-      search_calc_result = search_calc(sym_bol, accum_num)
-      order_condition[item_no] = search_calc_result[0]
-      limit_diff_p[item_no] = search_calc_result[1]
-      value_s_list[item_no] = search_calc_result[2]
-      value_v_list[item_no] = search_calc_result[3]
-      h_price, l_price = sym_price, sym_price 
+      order_side = 0
+      if(long_qty != 0):  order_side = 1
+      if(short_qty != 0): order_side = 2
+      if(long_qty == 0) and (short_qty == 0):
+          search_calc_result = search_calc(sym_bol, accum_num)
+          order_condition[item_no] = search_calc_result[0]
+          limit_diff_p[item_no] = search_calc_result[1]
+          value_s_list[item_no] = search_calc_result[2]
+          value_v_list[item_no] = search_calc_result[3]
+      else:
+          order_calc_result = order_calc(sym_bol, order_side)
+          order_condition[item_no] = order_calc_result[0]
+          limit_diff_p[item_no] = order_calc_result[1]
+          value_s_list[item_no] = order_calc_result[2]
+          value_v_list[item_no] = order_calc_result[3]
+#      h_price, l_price = sym_price, sym_price
+      if(order_condition[item_no] == 1): h_price, l_price = sym_price, value_s_list[item_no][1]
+      if(order_condition[item_no] == 2): h_price, l_price = value_s_list[item_no][0], sym_price
+      if(order_condition[item_no] not in (1, 2)): h_price, l_price = sym_price, sym_price
+      max_diff = sym_price * 0.5 / 5
+      if(limit_diff_p[item_no] > max_diff): limit_diff_p[item_no] = max_diff
 #-------------------------------------------------------------------------------
 #START
 #-------------------------------------------------------------------------------
@@ -825,21 +854,22 @@ while True:
         lever_check = 0
         m_lever = 5
 #        if(order_condition[item_no] in (1, 2)) and (value_s_list[item_no][2] < float(max_lever)) and ((order_index not in (0, 1, 2)) or (accum_pnl >= 0)):
-        if(order_condition[item_no] in (1, 2, 11, 22)) and (value_s_list[item_no][2] < float(max_lever)):
+        if(order_condition[item_no] in (1, 2)) and (value_s_list[item_no][2] < float(max_lever)):
           if(value_s_list[item_no][2] > m_lever): str_lever = str(value_s_list[item_no][2])
           else: str_lever = str(m_lever)
+#          str_lever = str(m_lever)
           apply_lever = str(int(Decimal(str_lever) / Decimal(lever_step)) * Decimal(lever_step))
           if(long_qty == 0) and (short_qty == 0):
             if(float(apply_lever) != float(l_sym_lever)) or (float(apply_lever) != float(s_sym_lever)):
               session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=apply_lever, sellLeverage=apply_lever)
               time.sleep(1)
               lever_check = 3
-          if(order_condition[item_no] in (1, 11)) and (long_qty == 0) and (short_qty != 0):
+          if(order_condition[item_no] in (1, 111)) and (long_qty == 0) and (short_qty != 0):
             if(float(apply_lever) != float(l_sym_lever)):
               session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=apply_lever, sellLeverage=s_sym_lever)
               time.sleep(1)
               lever_check = 3
-          if(order_condition[item_no] in (2, 22)) and (long_qty != 0) and (short_qty == 0):
+          if(order_condition[item_no] in (2, 222)) and (long_qty != 0) and (short_qty == 0):
             if(float(apply_lever) != float(s_sym_lever)):
               session.set_leverage(category="linear", symbol=sym_bol, buyLeverage=l_sym_lever, sellLeverage=apply_lever)
               time.sleep(1)
@@ -858,9 +888,9 @@ while True:
 
           if(long_qty == 0) and (short_qty == 0):
             if(float(apply_lever) == float(l_sym_lever)) and (float(apply_lever) == float(s_sym_lever)): lever_check = 1
-          if(order_condition[item_no] in (1, 11)) and (long_qty == 0) and (short_qty != 0):
+          if(order_condition[item_no] in (1, 111)) and (long_qty == 0) and (short_qty != 0):
             if(float(apply_lever) == float(l_sym_lever)): lever_check = 1
-          if(order_condition[item_no] in (2, 22)) and (long_qty != 0) and (short_qty == 0):
+          if(order_condition[item_no] in (2, 222)) and (long_qty != 0) and (short_qty == 0):
             if(float(apply_lever) == float(s_sym_lever)): lever_check = 1
 #-------------------------------------------------------------------------------
         if(long_qty == 0) and (short_qty == 0) and (order_condition[item_no] in (1, 2)) and (lever_check == 1): num = num + 1
@@ -879,8 +909,8 @@ while True:
         l_order_price = str(int(Decimal(l_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_ex_qty = str((add_invest_usdt * float(l_sym_lever)) / float(l_order_price))
         l_order_qty = str(int(Decimal(l_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        l_tp_ex_price = str(h_price + (limit_diff_p[item_no] * 1.3) + float(tick_size))
-#        l_tp_ex_price = str(0)
+        l_tp_ex_price = str(0)
+#        l_tp_ex_price = str(h_price + (limit_diff_p[item_no] * 1.3) + float(tick_size))
         l_tp_price = str(int(Decimal(l_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         l_st_ex_price = str(h_price - limit_diff_p[item_no] - float(tick_size))
         l_st_price = str(int(Decimal(l_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
@@ -893,9 +923,9 @@ while True:
         s_order_price = str(int(Decimal(s_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_ex_qty = str((add_invest_usdt * float(s_sym_lever)) / float(s_order_price))
         s_order_qty = str(int(Decimal(s_ex_qty) / Decimal(qty_step)) * Decimal(qty_step))
-        s_tp_ex_price = str(l_price - (limit_diff_p[item_no] * 1.3) - float(tick_size))
-#        s_tp_ex_price = str(0)
-        if(float(s_tp_ex_price) < (l_price * 0.15)): s_tp_ex_price = str(l_price * 0.15)
+        s_tp_ex_price = str(0)
+#        s_tp_ex_price = str(l_price - (limit_diff_p[item_no] * 1.3) - float(tick_size))
+#        if(float(s_tp_ex_price) < (l_price * 0.15)): s_tp_ex_price = str(l_price * 0.15)
         s_tp_price = str(int(Decimal(s_tp_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
         s_st_ex_price = str(l_price + limit_diff_p[item_no] + float(tick_size))
         s_st_price = str(int(Decimal(s_st_ex_price) / Decimal(tick_size)) * Decimal(tick_size))
@@ -924,81 +954,37 @@ while True:
                     order_market_part(add_order)
                     time.sleep(1)
 
-#           if(order_condition[item_no] in (1, 11)) and (lever_check == 1):
-#             if(long_qty == 0) and (short_qty != 0) and ((add_invest_usdt * 1) < avail_usdt):
-#                 if(float(max_lever) >= float(l_sym_lever)):
-#                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
-#                     add_order = [sym_bol, "Buy", 2]
-#                     closed_order_part(add_order)
-#                     time.sleep(1)
-#                     print(sym_bol, "S_closed, L_open")  
-#                     order_linkid = f"{sym_bol}_Next_L_{int(time.time()*1000)}"
-#                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price, order_linkid]
-#                     order_market_part(add_order)
-#                     time.sleep(1)
-#           if(order_condition[item_no] in (2, 22)) and (lever_check == 1):
-#             if(long_qty != 0) and (short_qty == 0) and ((add_invest_usdt * 1) < avail_usdt):
-#                 if(float(max_lever) >= float(s_sym_lever)):
-#                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
-#                     add_order = [sym_bol, "Sell", 1]
-#                     closed_order_part(add_order)
-#                     print(sym_bol, "L_closed, S_open")
-#                     time.sleep(1)
-#                     order_linkid = f"{sym_bol}_Next_S_{int(time.time()*1000)}"
-#                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price, order_linkid]                  
-#                     order_market_part(add_order)
-#                     time.sleep(1)
-# #          if(order_condition[item_no] == 1):
-#             if(long_qty == 0) and (short_qty != 0) and ((add_invest_usdt * 2) < avail_usdt) and (avail_order_num >= num):
-#                 if(float(max_lever) >= float(l_sym_lever)):
-#                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
-#                     order_linkid = f"{sym_bol}_Next_L_{int(time.time()*1000)}"
-#                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price, order_linkid]
-#                     order_market_part(add_order)
-#                     time.sleep(1)
-#           if(order_condition[item_no] == 2):
-#             if(long_qty != 0) and (short_qty == 0) and ((add_invest_usdt * 2) < avail_usdt) and (avail_order_num >= num):
-#                 if(float(max_lever) >= float(s_sym_lever)):
-#                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
-#                     order_linkid = f"{sym_bol}_Next_S_{int(time.time()*1000)}"
-#                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price, order_linkid]                  
-#                     order_market_part(add_order)
-#                     time.sleep(1)
-
+# #          if(order_condition[item_no] == 1) and (lever_check == 1):
+#              if(long_qty == 0) and (short_qty != 0) and ((add_invest_usdt * 1) < avail_usdt):
+#                  if(float(max_lever) >= float(l_sym_lever)):
+#                    if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
+# #                     if(float(s_unpnl) > (invest_usdt * 0.1)):
+#                      add_order = [sym_bol, "Buy", 2]
+#                      closed_order_part(add_order)
+#                      time.sleep(1)
+#                      print(sym_bol, "S_closed, L_open")  
+#                      order_linkid = f"{sym_bol}_Next_L_{int(time.time()*1000)}"
+#                      add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price, order_linkid]
+#                      order_market_part(add_order)
+#                      time.sleep(1)
+#           if(order_condition[item_no] == 2) and (lever_check == 1):
+#              if(long_qty != 0) and (short_qty == 0) and ((add_invest_usdt * 1) < avail_usdt):
+#                  if(float(max_lever) >= float(s_sym_lever)):
+#                    if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
+# #                     if(float(l_unpnl) > (invest_usdt * 0.1)):
+#                      add_order = [sym_bol, "Sell", 1]
+#                      closed_order_part(add_order)
+#                      print(sym_bol, "L_closed, S_open")
+#                      time.sleep(1)
+#                      order_linkid = f"{sym_bol}_Next_S_{int(time.time()*1000)}"
+#                      add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price, order_linkid]                  
+#                      order_market_part(add_order)
+#                      time.sleep(1)
 # #-------------------------------------------------------------------------------
 #           if(order_condition[item_no] == 1) and (lever_check == 1) and ((order_index not in (0, 1, 2)) or (accum_pnl >= 0)):
-#             if(long_qty == 0) and (short_qty == 0) and ((add_invest_usdt * 2) < avail_usdt) and (avail_order_num >= num):
-#                 if(float(max_lever) >= float(l_sym_lever)):
-#                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
-#                     order_linkid = f"{sym_bol}_First_L_{int(time.time()*1000)}"
-#                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price, order_linkid]
-#                     order_market_part(add_order)
-#                     time.sleep(1)
 #           if(order_condition[item_no] == 2) and (lever_check == 1) and ((order_index not in (0, 1, 2)) or (accum_pnl >= 0)):
-#             if(long_qty == 0) and (short_qty == 0) and ((add_invest_usdt * 2) < avail_usdt) and (avail_order_num >= num):
-#                 if(float(max_lever) >= float(s_sym_lever)):
-#                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
-#                     order_linkid = f"{sym_bol}_First_S_{int(time.time()*1000)}"
-#                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price, order_linkid]                  
-#                     order_market_part(add_order)
-#                     time.sleep(1)
-
 #           if(order_index in (0, 1, 2)) and (accum_pnl < 0) and (last_side == "Sell") and (order_condition[item_no] in (1, 3)):
-#             if(long_qty == 0) and (short_qty == 0) and ((add_invest_usdt * 2) < avail_usdt) and (avail_order_num >= num):
-#                 if(float(max_lever) >= float(l_sym_lever)):
-#                   if(float(min_value) < l_ex_value) and (float(l_order_qty) != 0):
-#                     order_linkid = f"{sym_bol}_Second_L_{int(time.time()*1000)}"
-#                     add_order = [sym_bol, 'Buy', l_order_qty, 1, l_tp_price, l_st_price, order_linkid]
-#                     order_market_part(add_order)
-#                     time.sleep(1)
 #           if(order_index in (0, 1, 2)) and (accum_pnl < 0) and (last_side == "Buy") and (order_condition[item_no] in (2, 4)):
-#             if(long_qty == 0) and (short_qty == 0) and ((add_invest_usdt * 2) < avail_usdt) and (avail_order_num >= num):
-#                 if(float(max_lever) >= float(s_sym_lever)):
-#                   if(float(min_value) < s_ex_value) and (float(s_order_qty) != 0):
-#                     order_linkid = f"{sym_bol}_Second_S_{int(time.time()*1000)}"
-#                     add_order = [sym_bol, 'Sell', s_order_qty, 2, s_tp_price, s_st_price, order_linkid]                  
-#                     order_market_part(add_order)
-#                     time.sleep(1)
 # #-------------------------------------------------------------------------------
 # #          if(accum_pnl < 0) and (abs(accum_pnl * 1.3) < float(l_unpnl)):
 # #            ex_ts_diff = abs(float(l_ent_price) - sym_price) * 0.3
@@ -1045,11 +1031,16 @@ while True:
 #             session.cancel_all_orders(category="linear", symbol=sym_bol)
 #             time.sleep(1)
 #             print(sym_bol, "L_accum_pnl * 1.3 OVER")
-#           if(order_condition[item_no] == 4):
-#             add_order = [sym_bol, "Sell", 1]
-#             closed_order_part(add_order)
-#             time.sleep(1)
-#             print(sym_bol, "L_order_condition_end")
+#          if(order_condition[item_no] == 22) and (float(l_unpnl) > (invest_usdt * 0.1)):
+#            add_order = [sym_bol, "Sell", 1]
+#            closed_order_part(add_order)
+#            time.sleep(1)
+#            print(sym_bol, "L_order_PF_condition_end")
+          if(order_condition[item_no] != 1):
+            add_order = [sym_bol, "Sell", 1]
+            closed_order_part(add_order)
+            time.sleep(1)
+            print(sym_bol, "L_order_condition_end")
           
         if(short_qty != 0):
           if(created_time != 0) and (apply_time < limit_time):
@@ -1073,11 +1064,16 @@ while True:
 #             session.cancel_all_orders(category="linear", symbol=sym_bol)
 #             time.sleep(1)
 #             print(sym_bol, "S_accum_pnl * 1.3 OVER")
-#           if(order_condition[item_no] == 3):
-#             add_order = [sym_bol, "Buy", 2]
-#             closed_order_part(add_order)
-#             time.sleep(1)
-#             print(sym_bol, "S_order_condition_end")
+#          if(order_condition[item_no] == 11) and (float(s_unpnl) > (invest_usdt * 0.1)):
+#            add_order = [sym_bol, "Buy", 2]
+#            closed_order_part(add_order)
+#            time.sleep(1)
+#            print(sym_bol, "S_order_PF_condition_end")
+          if(order_condition[item_no] != 2):
+            add_order = [sym_bol, "Buy", 2]
+            closed_order_part(add_order)
+            time.sleep(1)
+            print(sym_bol, "S_order_condition_end")
 ###############################################################################
         current_apply_time = datetime.fromtimestamp(int(apply_time / 1000)) + timedelta(hours=9)
         if(created_time != 0): trade_time = datetime.fromtimestamp(int(created_time / 1000)) + timedelta(hours=9)
