@@ -110,6 +110,12 @@ def search_calc(sym_bol):
             xnum = h_list[sta:].index(std_max) + sta
             nnum = l_list[sta:].index(std_min) + sta
             if(std_min_diff > min_diff) and (std not in (xnum, nnum)):
+                for bk in range(std,len(t_list)):
+                    bk_max, bk_min = max(h_list[std:bk+1]), min(l_list[std:bk+1])
+                    bk_x_diff, bk_n_diff = abs(c_list[std] - bk_max), abs(c_list[std] - bk_min)
+                    bx_num = h_list[std:].index(bk_max) + std
+                    bn_num = l_list[std:].index(bk_min) + std
+                    if(max(bk_x_diff, bk_n_diff) >= std_max_diff): break
                 upper_v, lower_v = 0, 0
                 for vol in range(sta,std+1):
                     if(c_list[sta] > h_list[vol]): lower_v = lower_v + v_list[vol]
@@ -119,25 +125,29 @@ def search_calc(sym_bol):
                           upper_v = upper_v + (abs(c_list[sta] - h_list[vol]) / (h_list[vol] - l_list[vol]) * v_list[vol])
                           lower_v = lower_v + (abs(c_list[sta] - l_list[vol]) / (h_list[vol] - l_list[vol]) * v_list[vol])
                 vol_per = lower_v / (upper_v + lower_v) * 100
-                if(vol_per > 75): order_position = 11
-                if(vol_per < 25): order_position = 22
-                xnum = h_list[sta:].index(std_max) + sta
-                nnum = l_list[sta:].index(std_min) + sta
-                if(order_position == 11) and (xnum > nnum): order_position = 1
-                if(order_position == 22) and (xnum < nnum): order_position = 2
-                std_per = round(std_max_diff / (max_diff * 3) * 100, 2)
-                if(order_position in (1, 2, 11, 22)) and (std_max_diff > (max_diff * 3)): order_position = 3 
-        if(order_position in (1, 2, 3, 11, 22)):
+                if((max(bx_num, bn_num) + 1) >= len(t_list)): order_position = 0
+                else:
+                    xnum = h_list[sta:].index(std_max) + sta
+                    nnum = l_list[sta:].index(std_min) + sta
+                    if(vol_per > 75) and (xnum > nnum): order_position = 11
+                    if(vol_per < 25) and (xnum < nnum): order_position = 22
+                    if(order_position == 11) and (bx_num < bn_num): order_position = 1
+                    if(order_position == 11) and (bx_num > bn_num): order_position = 4
+                    if(order_position == 22) and (bx_num < bn_num): order_position = 3
+                    if(order_position == 22) and (bx_num > bn_num): order_position = 2
+                    std_per = round(std_max_diff / (max_diff * 3) * 100, 2)
+                    if(order_position in (1, 2, 3, 4, 11, 22)) and (std_max_diff > (max_diff * 3)): order_position = 5 
+        if(order_position not in (0, 9)):
             print(sym_bol, itv, order_position, round(vol_per, 2), std_per)
             break
     if(cal_diff > (max_diff * 4)): break
-    if(order_position not in (1, 2, 11, 22)): continue
+    if(order_position in (0, 9)): continue
     cal_diff = std_max_diff
     cal_lever = c_list[sta] * 0.5 / cal_diff
     limit_diff = cal_diff
     if(cal_diff > max_diff): limit_diff = max_diff
     break
-  if(order_position not in (1, 2, 3, 11, 22)): print(sym_bol, itv, order_position)
+  if(order_position == 9): print(sym_bol, itv, order_position)
 #-------------------------------------------------------------------------------
   order_return = [order_position]
   return(order_return)
