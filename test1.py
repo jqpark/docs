@@ -1,4 +1,220 @@
 #Replit
+#binence api
+#Replit
+import calendar
+import decimal
+from datetime import datetime, timedelta
+from decimal import Decimal
+import math
+import os
+import re
+import time
+from binance.client import Client
+import numpy
+import pandas as pd
+import pytz
+import requests
+
+invest_usdt = 4
+retry_num = 3
+check_order_list = []
+
+##############################################################################
+##############################################################################
+kst = pytz.timezone("Asia/Seoul")
+time_str = "2026-07-02,11:30"
+dt = datetime.strptime(time_str, "%Y-%m-%d,%H:%M")
+dt = kst.localize(dt)
+origin_time = int(dt.timestamp() * 1000)
+
+##############################################################################
+reset_time = int((int(time.time()) - (7 * 24 * 60 * 60)) * 1000)
+limit_time = int((int(time.time()) - (6 * 24 * 60 * 60)) * 1000)
+final_time = int((int(time.time()) - (5 * 24 * 60 * 60)) * 1000)
+
+if origin_time >= reset_time:
+    start_time = origin_time
+else:
+    start_time = reset_time
+
+##############################################################################
+##############################################################################
+chat_id = os.getenv("chat_id")
+order_id = os.getenv("order_id")
+
+# 바이낸스 클라이언트 생성 (시세 조회 등 Public API는 API Key 없이도 작동합니다)
+# API Key가 필요한 경우: Client(api_key=os.getenv("BINANCE_KEY"), api_secret=os.getenv("BINANCE_SECRET"))
+client = Client()
+try_list = []
+avail_order_num = 25
+##############################################################################
+# 바이낸스 USDT-M 선물 24시간 티커 데이터 조회
+tickers = client.futures_ticker()
+time.sleep(1)
+df = pd.DataFrame(tickers)
+# USDT 선물 심볼만 추출
+df = df[df['symbol'].str.endswith('USDT')].copy()
+# 컬럼 타입 및 단위 보정
+# quoteVolume: 24시간 거래대금 (USDT 기준)
+# priceChangePercent: 24시간 변동률 (%) -> 바이비트 스타일 소수점으로 변환
+df['turnover24h'] = df['quoteVolume'].astype(float)
+df['lastPrice'] = df['lastPrice'].astype(float)
+df['price24hPcnt'] = df['priceChangePercent'].astype(float) / 100.0
+# 거래대금(turnover24h) 내림차순 정렬
+sort_list = df.sort_values(
+    'turnover24h', key=lambda x: x.abs(), ascending=False, ignore_index=True
+)
+# 조건 필터링: 현재가가 (invest_usdt * 2) 미만인 종목
+added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2))]
+added_symbols = added_list["symbol"].tolist()
+# -------------------------------------------------------------------------
+# 2. 바이낸스 상장 폐지 / 거래 정지 심볼 제외 로직
+# -------------------------------------------------------------------------
+final_del_list = []
+try:
+    # 방법 A: 바이낸스 선물 거래소 정보(Exchange Info)에서 TRADING 상태가 아닌 심볼 수집
+    exchange_info = client.futures_exchange_info()
+    inactive_symbols = [
+        s['symbol']
+        for s in exchange_info['symbols']
+        if s['status'] != 'TRADING'
+    ]
+    final_del_list.extend(inactive_symbols)
+    # 방법 B: 바이낸스 공식 공지사항(Announcements) API 파싱 (Delisting 키워드 검색)
+    ann_url = "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query?catalogId=48&pageNo=1&pageSize=10"
+    res = requests.get(ann_url, timeout=5).json()
+    articles = res.get('data', {}).get('articles', [])
+    del_titles = [
+        a['title']
+        for a in articles
+        if 'Delist' in a['title'] or 'delist' in a['title']
+    ]
+    all_words = []
+    for title in del_titles:
+        all_words.extend(re.findall(r'\b\w+\b', title))
+    # 대문자 단어 추출 (e.g. BTC, ETH 등 심볼명)
+    uppercase_words = {word for word in all_words if word.isupper()}
+    final_del_list.extend(list(uppercase_words))
+    final_del_list = sorted(list(set(final_del_list)))
+except Exception as e:
+    print(f"상장 폐지 공지 조회 실패 (스킵): {e}")
+    final_del_list = []
+# -------------------------------------------------------------------------
+# 3. 제외 대상 정제 및 최종 try_list 확장
+# -------------------------------------------------------------------------
+# 1) 이미 보유/주문 시도 중인 try_list 제외
+added_symbols = [x for x in added_symbols if x not in try_list]
+# 2) 상장 폐지/거래 정지 대상 심볼 및 키워드 포함 심볼 제외
+added_symbols = [
+    x
+    for x in added_symbols
+    if x not in final_del_list
+    and not any(del_word in x for del_word in final_del_list)
+]
+# 3) USDT 페어만 최종 확인
+added_symbols = [x for x in added_symbols if 'USDT' in x]
+time.sleep(1)
+print('added_symbols (필터링 후):', len(added_symbols))
+# 추가할 수량 설정 및 try_list 확장
+added_num = avail_order_num + 5
+added_symbols = added_symbols[:added_num]
+if added_symbols:
+    try_list.extend(added_symbols)
+print('added_symbols (최종 추가):', len(try_list))
+print(try_list)
+################################################################################
+def search_calc(sym_bol):
+  order_position = 9
+  itv_list = ['3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h']
+  for itv in itv_list:
+#-------------------------------------------------------------------------------
+    get_kline = client.futures_klines(symbol=sym_bol, interval=itv, limit=1000)
+# DataFrame 변환 및 컬럼 지정
+    cols = ['timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'turnover', 'trades', 'tb_base', 'tb_quote', 'ignore']
+    df_kline = pd.DataFrame(get_kline, columns=cols)
+# 필요한 컬럼 타입 변환
+    numeric_cols = ['open', 'high', 'low', 'close', 'volume', 'turnover']
+    df_kline[numeric_cols] = df_kline[numeric_cols].astype(float)
+    df_kline['timestamp'] = df_kline['timestamp'].astype(int)
+# 바이비트 스타일(최신순)로 맞추려면:
+    df_kline = df_kline.iloc[::-1].reset_index(drop=True)
+# 리스트로 추출이 필요한 경우:
+    t_list = df_kline['timestamp'].tolist()
+    o_list = df_kline['open'].tolist()
+    h_list = df_kline['high'].tolist()
+    l_list = df_kline['low'].tolist()
+    c_list = df_kline['close'].tolist()
+    v_list = df_kline['volume'].tolist()
+    p_list = df_kline['turnover'].tolist()
+#-------------------------------------------------------------------------------
+    max_lever, min_lever, cal_lever, fr_per = 5, 10, 99, 0
+    sta = 0
+    max_diff = c_list[sta] * 0.5 / max_lever
+    min_diff = c_list[sta] * 0.5 / min_lever
+    cal_max, cal_min = max(h_list[sta:]), min(l_list[sta:])
+    xnum = h_list[sta:].index(cal_max) + sta
+    nnum = l_list[sta:].index(cal_min) + sta
+    cal_diff = cal_max - cal_min
+    cal_lever = c_list[sta] * 0.5 / cal_diff
+    limit_diff = cal_diff
+    for std in range(sta,len(t_list)):
+        if(h_list[std] >= c_list[sta] >= l_list[std]):
+            std_max, std_min = max(h_list[sta:std+1]), min(l_list[sta:std+1])
+            std_diff = std_max - std_min
+            std_x_diff, std_n_diff = abs(c_list[sta] - std_max), abs(c_list[sta] - std_min)
+            std_min_diff, std_max_diff = min(std_n_diff, std_x_diff), max(std_n_diff, std_x_diff)
+            xnum = h_list[sta:].index(std_max) + sta
+            nnum = l_list[sta:].index(std_min) + sta
+            if(std_min_diff > min_diff) and (std not in (xnum, nnum)):
+                for bk in range(std,len(t_list)):
+                    bk_max, bk_min = max(h_list[std:bk+1]), min(l_list[std:bk+1])
+                    bk_x_diff, bk_n_diff = abs(c_list[std] - bk_max), abs(c_list[std] - bk_min)
+                    bx_num = h_list[std:].index(bk_max) + std
+                    bn_num = l_list[std:].index(bk_min) + std
+                    if(max(bk_x_diff, bk_n_diff) >= std_max_diff): break
+                upper_v, lower_v = 0, 0
+                for vol in range(sta,std+1):
+                    if(c_list[sta] > h_list[vol]): lower_v = lower_v + v_list[vol]
+                    elif(c_list[sta] < l_list[vol]): upper_v = upper_v + v_list[vol]
+                    else:
+                      if(h_list[vol] != l_list[vol]):
+                          upper_v = upper_v + (abs(c_list[sta] - h_list[vol]) / (h_list[vol] - l_list[vol]) * v_list[vol])
+                          lower_v = lower_v + (abs(c_list[sta] - l_list[vol]) / (h_list[vol] - l_list[vol]) * v_list[vol])
+                vol_per = lower_v / (upper_v + lower_v) * 100
+                if((max(bx_num, bn_num) + 1) >= len(t_list)): order_position = 0
+                else:
+                    xnum = h_list[sta:].index(std_max) + sta
+                    nnum = l_list[sta:].index(std_min) + sta
+                    if(vol_per > 75) and (xnum > nnum): order_position = 11
+                    if(vol_per < 25) and (xnum < nnum): order_position = 22
+                    if(order_position == 11) and (bx_num < bn_num): order_position = 1
+                    if(order_position == 11) and (bx_num > bn_num): order_position = 4
+                    if(order_position == 22) and (bx_num < bn_num): order_position = 3
+                    if(order_position == 22) and (bx_num > bn_num): order_position = 2
+                    std_per = round(std_max_diff / (max_diff * 3) * 100, 2)
+                    if(order_position in (1, 2, 3, 4, 11, 22)) and (std_max_diff > (max_diff * 3)): order_position = 5 
+        if(order_position not in (0, 9)):
+            print(sym_bol, itv, order_position, round(vol_per, 2), std_per)
+            break
+    if(cal_diff > (max_diff * 4)): break
+    if(order_position in (0, 9)): continue
+    cal_diff = std_max_diff
+    cal_lever = c_list[sta] * 0.5 / cal_diff
+    limit_diff = cal_diff
+    if(cal_diff > max_diff): limit_diff = max_diff
+    break
+  if(order_position == 9): print(sym_bol, itv, order_position)
+#-------------------------------------------------------------------------------
+  order_return = [order_position]
+  return(order_return)
+for sym_bol in try_list:
+  order_return = search_calc(sym_bol)      
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+#bybit api
 from pybit.unified_trading import HTTP
 import pandas as pd
 import time
