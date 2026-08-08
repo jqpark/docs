@@ -312,8 +312,8 @@ def order_calc(sym_bol, apply_time, order_side, order_price):
     else: cal_per = (c_list[0] - cal_min) / (cal_max - cal_min) * 100
 #    if(order_side == 1) and (cal_per < 75): order_position = 2
 #    if(order_side == 2) and (cal_per > 25): order_position = 1
-    if(order_side == 1) and (vol_per < 75): order_position = 4
-    if(order_side == 2) and (vol_per > 25): order_position = 3
+    if(order_side == 1) and (order_per < 75): order_position = 4
+    if(order_side == 2) and (order_per > 25): order_position = 3
     if(order_side == 1) and (vol_per < 25): order_position = 2
     if(order_side == 2) and (vol_per > 75): order_position = 1
     print(sym_bol, itv, order_position, round(cal_per, 2), round(vol_per, 2))
