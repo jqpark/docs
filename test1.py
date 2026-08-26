@@ -101,10 +101,11 @@ def search_calc(sym_bol):
     xnum = h_list[sta:].index(cal_max) + sta
     nnum = l_list[sta:].index(cal_min) + sta
     cal_diff = cal_max - cal_min
-    if(cal_diff < (max_diff * 2)): continue
+#    if(cal_diff < (max_diff * 2)): continue
     cal_lever = c_list[sta] * 0.5 / cal_diff
     limit_diff = cal_diff
     upper_v, lower_v = 0, 0
+    vol_list = [0]
     for std in range(sta,len(t_list)):
             std_max, std_min = max(c_list[sta:std+1]), min(c_list[sta:std+1])
             std_diff = std_max - std_min
@@ -114,26 +115,43 @@ def search_calc(sym_bol):
                 vol = ((c_list[std] - o_list[std]) / (h_list[std] - l_list[std])) * v_list[std]
                 if(vol > 0): upper_v = upper_v + vol
                 if(vol < 0): lower_v = lower_v + vol
+                vol_add = vol_list[std] + vol
+                vol_list.append(vol_add)
+            else:
+                vol_add = vol_list[std]
+                vol_list.append(vol_add)
 #            if(std_diff > (max_diff * 2)) and (std not in (xnum, nnum)): break
-            if(std_max_diff >= (max_diff * 1)) and (std not in (xnum, nnum)): break
-    xnum = c_list[sta:].index(std_max) + sta
-    nnum = c_list[sta:].index(std_min) + sta
-    vol_per = (upper_v / (upper_v + abs(lower_v))) * 100
-    std_per = ((c_list[sta] - std_min) / std_diff) * 100
-    if(std_x_diff == 0): upp_lever = 99
-    else: upp_lever = c_list[sta] * 0.5 / std_x_diff
-    if(std_n_diff == 0): low_lever = 99
-    else: low_lever = c_list[sta] * 0.5 / std_n_diff
-    cal_diff = std_max_diff
-    cal_lever = c_list[sta] * 0.5 / cal_diff
-    limit_diff = cal_diff
-    if(vol_per < std_per): order_position = 11
-    if(vol_per > std_per): order_position = 22
-    if(order_position == 11) and (10 >= low_lever >= 5): order_position = 1
-    if(order_position == 22) and (10 >= upp_lever >= 5): order_position = 2
-    print(sym_bol, itv, order_position, round(std_per, 2), round(vol_per, 2))
-    print(round(upp_lever,1), round(low_lever,1))
-    break
+#            if(std_max_diff >= (max_diff * 1)) and (std not in (xnum, nnum)): break
+            xnum = c_list[sta:].index(std_max) + sta
+            nnum = c_list[sta:].index(std_min) + sta
+            if(max(vol_list) == min(vol_list)): add_per = 0
+#            else: add_per = (vol_list[std] - vol_list[0]) / (max(vol_list) - min(vol_list)) * 100
+            else: add_per = (vol_list[std] - min(vol_list)) / (max(vol_list) - min(vol_list)) * 100
+            if((upper_v + abs(lower_v)) == 0): vol_per = 0
+            else: vol_per = ((upper_v + lower_v) / (upper_v + abs(lower_v))) * 100
+            if(std_diff == 0): std_per = 0
+#            else: std_per = ((c_list[sta] - c_list[std]) / std_diff) * 100
+            else: std_per = ((c_list[sta] - std_min) / std_diff) * 100
+            if(std_x_diff == 0): upp_lever = 99
+            else: upp_lever = c_list[sta] * 0.5 / std_x_diff
+            if(std_n_diff == 0): low_lever = 99
+            else: low_lever = c_list[sta] * 0.5 / std_n_diff
+            cal_diff = std_max_diff
+            if(cal_diff == 0): cal_lever = 99
+            else: cal_lever = c_list[sta] * 0.5 / cal_diff
+            limit_diff = cal_diff
+            if(50 > std_per) and (add_per > std_per) and (std_max_diff >= min_diff): order_position = 1
+            if(50 < std_per) and (add_per < std_per) and (std_max_diff >= min_diff): order_position = 2
+#            if(50 > std_per) and (add_per > 50) and (std_max_diff >= min_diff): order_position = 1
+#            if(50 < std_per) and (add_per < 50) and (std_max_diff >= min_diff): order_position = 2
+            if(order_position in (1, 2)): break
+    if(order_position not in (1, 2)):
+        print(sym_bol, itv, order_position, round(std_per, 2), round(add_per, 2), 'continue')
+        continue
+    else: 
+        print(sym_bol, itv, order_position, round(std_per, 2), round(add_per, 2))
+        print(round(upp_lever,1), round(low_lever,1))
+        break
 #-------------------------------------------------------------------------------
   order_return = [order_position]
   return(order_return)
