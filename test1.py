@@ -108,9 +108,9 @@ def search_calc(sym_bol):
     upper_p, lower_p = 0, 0
     vol_list = [0]
     for std in range(sta,len(t_list)):
-            std_max, std_min = max(c_list[sta:std+1]), min(c_list[sta:std+1])
+            std_max, std_min = max(h_list[sta:std+1]), min(l_list[sta:std+1])
             std_diff = std_max - std_min
-            std_x_diff, std_n_diff = abs(c_list[sta] - std_max), abs(c_list[sta] - std_min)
+            std_x_diff, std_n_diff = abs(o_list[sta] - std_max), abs(o_list[sta] - std_min)
             std_min_diff, std_max_diff = min(std_n_diff, std_x_diff), max(std_n_diff, std_x_diff)
             if(h_list[std] != l_list[std]):
                 vol = ((c_list[std] - o_list[std]) / (h_list[std] - l_list[std])) * v_list[std]
@@ -126,9 +126,8 @@ def search_calc(sym_bol):
                 vol_list.append(vol_add)
 #            if(std_diff > (max_diff * 2)) and (std not in (xnum, nnum)): break
 #            if(std_max_diff >= (max_diff * 1)) and (std not in (xnum, nnum)): break
-            xnum = c_list[sta:].index(std_max) + sta
-            nnum = c_list[sta:].index(std_min) + sta
-            i_vol = - min(vol_list)
+            xnum = h_list[sta:].index(std_max) + sta
+            nnum = l_list[sta:].index(std_min) + sta
             if(max(vol_list) == min(vol_list)): add_per = 0
 #            else: add_per = (vol_list[-1] - vol_list[0]) / (max(vol_list) - min(vol_list)) * 100
             else: add_per = (vol_list[-1] - min(vol_list)) / (max(vol_list) - min(vol_list)) * 100
@@ -137,8 +136,8 @@ def search_calc(sym_bol):
             if(lower_p == 0): pol_per = 0
             else: pol_per = (upper_p / abs(lower_p)) * 100
             if(std_diff == 0): std_per = 0
-            else: std_per = ((c_list[sta] - c_list[std]) / std_diff) * 100
-#            else: std_per = ((c_list[sta] - std_min) / std_diff) * 100
+#            else: std_per = ((c_list[sta] - c_list[std]) / std_diff) * 100
+            else: std_per = ((c_list[sta] - std_min) / std_diff) * 100
             if(std_x_diff == 0): upp_lever = 99
             else: upp_lever = c_list[sta] * 0.5 / std_x_diff
             if(std_n_diff == 0): low_lever = 99
@@ -148,25 +147,124 @@ def search_calc(sym_bol):
             else: cal_lever = c_list[sta] * 0.5 / cal_diff
             limit_diff = cal_diff
             if((0 >= vol_list[-1]) and (0 <= vol_list[-2])) or ((0 <= vol_list[-1]) and (0 >= vol_list[-2])):
-                if(0 > std_per) and (std_max_diff >= min_diff): order_position = 2
-                if(0 < std_per) and (std_max_diff >= min_diff): order_position = 1
-#            if(50 > std_per) and (add_per > std_per) and (std_max_diff >= min_diff): order_position = 1
-#            if(50 < std_per) and (add_per < std_per) and (std_max_diff >= min_diff): order_position = 2
+                if(std_x_diff < std_n_diff) and (std_diff >= max_diff): order_position = 2
+                if(std_x_diff > std_n_diff) and (std_diff >= max_diff): order_position = 1
 #            if(50 > std_per) and (add_per > 50) and (std_max_diff >= min_diff): order_position = 1
 #            if(50 < std_per) and (add_per < 50) and (std_max_diff >= min_diff): order_position = 2
             if(order_position in (1, 2)): break
     if(order_position not in (1, 2)):
 #        print(sym_bol, itv, order_position, round(std_per, 2), round(vol_per, 2), 'continue')
         continue
-    else: 
-        print(sym_bol, itv, order_position, round(std_per, 2), round(vol_per, 2), round(pol_per, 2))
-        print(c_list[std], c_list[0], round(upp_lever,1), round(low_lever,1))
+    else:
+        new_max, new_min = max(h_list[:sta]), min(l_list[:sta])
+        low_diff, upp_diff = abs(new_min - c_list[sta]), abs(new_max - c_list[sta])
+        low_per, upp_per = round(cal_lever * low_diff / c_list[sta], 2), round(cal_lever * upp_diff / c_list[sta], 2)
+        print(sym_bol, itv, order_position, round(std_per, 2), round(vol_per, 2), round(upp_lever,1), round(low_lever,1))
+        print(c_list[sta], new_max, new_min, c_list[0], upp_per, low_per)
+#        round(upp_lever,1), round(low_lever,1))
         break
 #-------------------------------------------------------------------------------
   order_return = [order_position]
   return(order_return)
 for sym_bol in added_symbols[:30]:
   order_return = search_calc(sym_bol)
+# ##############################################################################
+# def search_calc(sym_bol):
+#   order_position = 9
+#   itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720]
+#   for itv in itv_list:
+# #-------------------------------------------------------------------------------
+#     get_kline=session.get_kline(category="linear",symbol=sym_bol,interval=str(itv),limit=1000)['result']['list']
+#     time.sleep(1)
+#     kline = pd.DataFrame(get_kline)
+#     t_list,o_list,h_list,l_list,c_list,v_list,p_list = [],[],[],[],[],[],[]
+#     for i in range(len(kline[0])):
+#       t_list.append(int(kline[0][i]))
+#       o_list.append(float(kline[1][i]))
+#       h_list.append(float(kline[2][i]))
+#       l_list.append(float(kline[3][i]))
+#       c_list.append(float(kline[4][i]))
+#       v_list.append(float(kline[5][i]))
+#       p_list.append(float(kline[6][i]))
+# #-------------------------------------------------------------------------------
+#     max_lever, min_lever, cal_lever, fr_per = 5, 10, 99, 0
+#     sta = 100
+#     max_diff = c_list[sta] * 0.5 / max_lever
+#     min_diff = c_list[sta] * 0.5 / min_lever
+#     cal_max, cal_min = max(h_list[sta:]), min(l_list[sta:])
+#     xnum = h_list[sta:].index(cal_max) + sta
+#     nnum = l_list[sta:].index(cal_min) + sta
+#     cal_diff = cal_max - cal_min
+# #    if(cal_diff < (max_diff * 2)): continue
+#     cal_lever = c_list[sta] * 0.5 / cal_diff
+#     limit_diff = cal_diff
+#     upper_v, lower_v = 0, 0
+#     upper_p, lower_p = 0, 0
+#     vol_list = [0]
+#     for std in range(sta,len(t_list)):
+#             std_max, std_min = max(c_list[sta:std+1]), min(c_list[sta:std+1])
+#             std_diff = std_max - std_min
+#             std_x_diff, std_n_diff = abs(c_list[sta] - std_max), abs(c_list[sta] - std_min)
+#             std_min_diff, std_max_diff = min(std_n_diff, std_x_diff), max(std_n_diff, std_x_diff)
+#             if(h_list[std] != l_list[std]):
+#                 vol = ((c_list[std] - o_list[std]) / (h_list[std] - l_list[std])) * v_list[std]
+#                 pol = ((c_list[std] - o_list[std]) / (h_list[std] - l_list[std])) * p_list[std]
+#                 if(vol > 0): upper_v = upper_v + vol
+#                 if(vol < 0): lower_v = lower_v + vol
+#                 if(pol > 0): upper_p = upper_p + pol
+#                 if(pol < 0): lower_p = lower_p + pol
+#                 vol_add = vol_list[-1] + vol
+#                 vol_list.append(vol_add)
+#             else:
+#                 vol_add = vol_list[-1]
+#                 vol_list.append(vol_add)
+# #            if(std_diff > (max_diff * 2)) and (std not in (xnum, nnum)): break
+# #            if(std_max_diff >= (max_diff * 1)) and (std not in (xnum, nnum)): break
+#             xnum = c_list[sta:].index(std_max) + sta
+#             nnum = c_list[sta:].index(std_min) + sta
+#             i_vol = - min(vol_list)
+#             if(max(vol_list) == min(vol_list)): add_per = 0
+#             else: add_per = (vol_list[-1] - vol_list[0]) / (max(vol_list) - min(vol_list)) * 100
+# #            else: add_per = (vol_list[-1] - min(vol_list)) / (max(vol_list) - min(vol_list)) * 100
+#             if(lower_v == 0): vol_per = 0
+#             else: vol_per = (upper_v / abs(lower_v)) * 100
+#             if(lower_p == 0): pol_per = 0
+#             else: pol_per = (upper_p / abs(lower_p)) * 100
+#             if(std_diff == 0): std_per = 0
+#             else: std_per = ((c_list[sta] - c_list[std]) / std_diff) * 100
+# #            else: std_per = ((c_list[sta] - std_min) / std_diff) * 100
+#             if(std_x_diff == 0): upp_lever = 99
+#             else: upp_lever = c_list[sta] * 0.5 / std_x_diff
+#             if(std_n_diff == 0): low_lever = 99
+#             else: low_lever = c_list[sta] * 0.5 / std_n_diff
+#             cal_diff = std_max_diff
+#             if(cal_diff == 0): cal_lever = 99
+#             else: cal_lever = c_list[sta] * 0.5 / cal_diff
+#             limit_diff = cal_diff
+# #            if((0 >= vol_list[-1]) and (0 <= vol_list[-2])) or ((0 <= vol_list[-1]) and (0 >= vol_list[-2])):
+# #                if(0 > std_per) and (std_max_diff >= min_diff): order_position = 2
+# #                if(0 < std_per) and (std_max_diff >= min_diff): order_position = 1
+#             if(0 > std_per) and (add_per > std_per) and (std_max_diff >= min_diff): order_position = 2
+#             if(0 < std_per) and (add_per < std_per) and (std_max_diff >= min_diff): order_position = 1
+# #            if(50 > std_per) and (add_per > 50) and (std_max_diff >= min_diff): order_position = 1
+# #            if(50 < std_per) and (add_per < 50) and (std_max_diff >= min_diff): order_position = 2
+#             if(order_position in (1, 2)): break
+#     if(order_position not in (1, 2)):
+# #        print(sym_bol, itv, order_position, round(std_per, 2), round(vol_per, 2), 'continue')
+#         continue
+#     else:
+#         new_max, new_min = max(h_list[:sta]), min(l_list[:sta])
+#         low_diff, upp_diff = abs(new_min - c_list[sta]), abs(new_max - c_list[sta])
+#         low_per, upp_per = round(cal_lever * low_diff / c_list[sta], 2), round(cal_lever * upp_diff / c_list[sta], 2)
+#         print(sym_bol, itv, order_position, round(std_per, 2), round(add_per, 2), round(vol_per, 2), round(pol_per, 2))
+#         print(c_list[sta], new_max, new_min, c_list[0], upp_per, low_per)
+# #        round(upp_lever,1), round(low_lever,1))
+#         break
+# #-------------------------------------------------------------------------------
+#   order_return = [order_position]
+#   return(order_return)
+# for sym_bol in added_symbols[:30]:
+#   order_return = search_calc(sym_bol)
 ##############################################################################
 ################################################################################
 ################################################################################
