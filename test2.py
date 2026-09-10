@@ -1,4 +1,4 @@
-#v5_test15-7-20_JQPARK_260909-1530_217.2
+#v5_test15-6-15_SMA000_260910-1100_200.6
 #SMA000-235.8_MAINJQ-172.8_SMA020-169.3
 #upper_lower diff_condition add, limit x, half double, retry_num = 3, invest_usdt 4
 #v5 api
@@ -22,7 +22,7 @@ check_order_list = []
 ##############################################################################
 ##############################################################################
 kst = pytz.timezone("Asia/Seoul")
-time_str = "2026-09-09,15:30"
+time_str = "2026-09-10,11:00"
 dt = datetime.strptime(time_str, "%Y-%m-%d,%H:%M")
 dt = kst.localize(dt)
 origin_time = int(dt.timestamp() * 1000)
@@ -209,17 +209,19 @@ def search_calc(sym_bol, accum_num):
         if(std_diff >= (min_diff * 2)):
             upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
             check_position = 0
-            vol_list, pol_list = [0], [0]
+            vol_list, pol_list, tol_list = [0], [0], [0]
             i = 0
-            for vol in range(std, sta-1,-1):
+            for vol in range(len(t_list)-1, sta-1,-1):
                 if(h_list[vol] != l_list[vol]):
                     upp_vol = max(c_list[vol], o_list[vol]) - h_list[vol]
                     mid_vol = c_list[vol] - o_list[vol]
                     low_vol = min(c_list[vol], o_list[vol]) - l_list[vol]
                     vol_cal = ((upp_vol + mid_vol + low_vol) / (h_list[vol] - l_list[vol])) * v_list[vol]
-                    pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
                     vol_list.append(vol_list[i] + vol_cal)
+                    pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
                     pol_list.append(pol_list[i] + pol_cal)
+                    tol_cal = (((h_list[vol] - o_list[vol]) - (o_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
+                    tol_list.append(tol_list[i] + tol_cal)
                     cr_list.append(c_list[vol])
                     i = i + 1
             std_per = (cr_list[-1] - min(cr_list)) / (max(cr_list) - min(c_list)) * 100
@@ -227,18 +229,20 @@ def search_calc(sym_bol, accum_num):
             std_per1 = (cr_list[-1] - cr_list[0]) / (max(cr_list) - min(cr_list)) * 100
             vol_per = (vol_list[-1] - vol_list[0]) / (max(vol_list) - min(vol_list)) * 100
             pol_per = (pol_list[-1] - pol_list[0]) / (max(pol_list) - min(pol_list)) * 100
-            if(vol_list[-1] > 0) and (pol_list[-1] < 0): check_position = 1
-            if(vol_list[-1] < 0) and (pol_list[-1] > 0): check_position = 2
+            tol_per = (tol_list[-1] - tol_list[0]) / (max(tol_list) - min(tol_list)) * 100
+            if(max(vol_list[-1], pol_list[-1], tol_list[-1]) == tol_list[-1]) and (min(vol_list[-1], pol_list[-1], tol_list[-1]) == vol_list[-1]): check_position = 1
+            if(max(vol_list[-1], pol_list[-1], tol_list[-1]) == vol_list[-1]) and (min(vol_list[-1], pol_list[-1], tol_list[-1]) == tol_list[-1]): check_position = 2
             if(check_position in (1, 2)):
-                c_std_per, c_vol_per, c_std_per1, c_pol_per = std_per, vol_per, std_per1, pol_per
+                c_std_per, c_vol_per, c_tol_per, c_pol_per = std_per, vol_per, tol_per, pol_per
                 order_position = check_position
                 cal_diff = std_max_diff
                 limit_diff = cal_diff
                 if(cal_diff > max_diff): limit_diff = max_diff
                 cal_lever = c_list[sta] * 0.5 / limit_diff
+                break
     if(order_position in (1, 2)):
         print(sym_bol, itv, order_position, cal_lever)
-        print(round(c_std_per,2), round(c_std_per1,2), round(c_vol_per,2), round(c_pol_per,2))
+        print(round(c_std_per,2), round(c_vol_per,2), round(c_pol_per,2), round(c_tol_per,2))
     elif(std_diff < (max_diff * 2)): continue
     else: print(sym_bol, itv, order_position)
     break
@@ -302,17 +306,19 @@ def order_calc(sym_bol, apply_time, order_side, order_price):
         if(std_diff >= (min_diff * 2)):
             upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
             check_position = 0
-            vol_list, pol_list = [0], [0]
+            vol_list, pol_list, tol_list = [0], [0], [0]
             i = 0
-            for vol in range(std, sta-1,-1):
+            for vol in range(len(t_list)-1, sta-1,-1):
                 if(h_list[vol] != l_list[vol]):
                     upp_vol = max(c_list[vol], o_list[vol]) - h_list[vol]
                     mid_vol = c_list[vol] - o_list[vol]
                     low_vol = min(c_list[vol], o_list[vol]) - l_list[vol]
                     vol_cal = ((upp_vol + mid_vol + low_vol) / (h_list[vol] - l_list[vol])) * v_list[vol]
-                    pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
                     vol_list.append(vol_list[i] + vol_cal)
+                    pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
                     pol_list.append(pol_list[i] + pol_cal)
+                    tol_cal = (((h_list[vol] - o_list[vol]) - (o_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
+                    tol_list.append(tol_list[i] + tol_cal)
                     cr_list.append(c_list[vol])
                     i = i + 1
             std_per = (cr_list[-1] - min(cr_list)) / (max(cr_list) - min(c_list)) * 100
@@ -320,18 +326,20 @@ def order_calc(sym_bol, apply_time, order_side, order_price):
             std_per1 = (cr_list[-1] - cr_list[0]) / (max(cr_list) - min(cr_list)) * 100
             vol_per = (vol_list[-1] - vol_list[0]) / (max(vol_list) - min(vol_list)) * 100
             pol_per = (pol_list[-1] - pol_list[0]) / (max(pol_list) - min(pol_list)) * 100
-            if(vol_list[-1] > 0) and (pol_list[-1] < 0): check_position = 1
-            if(vol_list[-1] < 0) and (pol_list[-1] > 0): check_position = 2
+            tol_per = (tol_list[-1] - tol_list[0]) / (max(tol_list) - min(tol_list)) * 100
+            if(max(vol_list[-1], pol_list[-1], tol_list[-1]) == tol_list[-1]) and (min(vol_list[-1], pol_list[-1], tol_list[-1]) == vol_list[-1]): check_position = 1
+            if(max(vol_list[-1], pol_list[-1], tol_list[-1]) == vol_list[-1]) and (min(vol_list[-1], pol_list[-1], tol_list[-1]) == tol_list[-1]): check_position = 2
             if(check_position in (1, 2)):
-                c_std_per, c_vol_per, c_std_per1, c_pol_per = std_per, vol_per, std_per1, pol_per
+                c_std_per, c_vol_per, c_tol_per, c_pol_per = std_per, vol_per, tol_per, pol_per
                 order_position = check_position
                 cal_diff = std_max_diff
                 limit_diff = cal_diff
                 if(cal_diff > max_diff): limit_diff = max_diff
                 cal_lever = c_list[sta] * 0.5 / limit_diff
+                break
     if(order_position in (1, 2)):
         print(sym_bol, itv, order_position, cal_lever)
-        print(round(c_std_per,2), round(c_std_per1,2), round(c_vol_per,2), round(c_pol_per,2))
+        print(round(c_std_per,2), round(c_vol_per,2), round(c_pol_per,2), round(c_tol_per,2))
     elif(std_diff < (max_diff * 2)): continue
     else: print(sym_bol, itv, order_position)
         
@@ -966,7 +974,7 @@ while True:
                     order_market_part(add_order)
                     time.sleep(1)
 
-         if(order_condition[item_no] == 1):
+          if(order_condition[item_no] == 1):
              if(long_qty == 0) and (short_qty != 0) and ((add_invest_usdt * 1) < avail_usdt):
 #                 if(float(max_lever) >= float(l_sym_lever)) and (float(s_unpnl) < 0) and (abs(float(s_unpnl)) > (invest_usdt * 0.375)):
                  if(float(max_lever) >= float(l_sym_lever)):
