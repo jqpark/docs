@@ -121,13 +121,13 @@ def search_calc(sym_bol):
         xnum = h_list[sta:].index(std_max) + sta
         nnum = l_list[sta:].index(std_min) + sta
         if(std_diff >= (max_diff * 2)): break
-        if(std_diff >= (min_diff * 2)) and (h_list[std] >= c_list[sta] >= l_list[std]):
-#        if(std_diff >= (min_diff * 2)):
+#        if(std_diff >= (min_diff * 2)) and (h_list[std] >= c_list[sta] >= l_list[std]):
+        if(std_diff >= (min_diff * 2)):
             upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
             check_position = 0
-            vol_list, pol_list, tol_list = [0], [0], [0]
+            vol_list, pol_list, tol_list, col_list = [0], [0], [0], [0]
             i = 0
-            for vol in range(len(t_list)-1, sta-1,-1):
+            for vol in range(std-1, sta-1,-1):
                 if(h_list[vol] != l_list[vol]):
                     upp_vol = max(c_list[vol], o_list[vol]) - h_list[vol]
                     mid_vol = c_list[vol] - o_list[vol]
@@ -138,6 +138,8 @@ def search_calc(sym_bol):
                     pol_list.append(pol_list[i] + pol_cal)
                     tol_cal = (((h_list[vol] - o_list[vol]) - (o_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
                     tol_list.append(tol_list[i] + tol_cal)
+                    col_cal = (((h_list[vol] - c_list[vol]) - (c_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
+                    col_list.append(col_list[i] + (vol_cal * (-1)))
                     cr_list.append(c_list[vol])
                     i = i + 1
             std_per = (cr_list[-1] - min(cr_list)) / (max(cr_list) - min(c_list)) * 100
@@ -145,17 +147,23 @@ def search_calc(sym_bol):
             std_per1 = (cr_list[-1] - cr_list[0]) / (max(cr_list) - min(cr_list)) * 100
             vol_per = (vol_list[-1] - vol_list[0]) / (max(vol_list) - min(vol_list)) * 100
             pol_per = (pol_list[-1] - pol_list[0]) / (max(pol_list) - min(pol_list)) * 100
-            if(tol_list[-1] > 0): check_position = 1
-            if(tol_list[-1] < 0): check_position = 2
+            tol_per = (tol_list[-1] - min(tol_list)) / (max(tol_list) - min(tol_list)) * 100
+            col_per = (col_list[-1] - min(col_list)) / (max(col_list) - min(col_list)) * 100
+#            if(vol_list[-1] < 0) and (col_list[-1] > 0): check_position = 2
+#            if(vol_list[-1] > 0) and (col_list[-1] < 0): check_position = 1
+            if(vol_list[-1] == max(vol_list)) and (col_list[-1] == min(col_list)): check_position = 1
+            if(vol_list[-1] == min(vol_list)) and (col_list[-1] == max(col_list)): check_position = 2
+#            if(tol_per > 50) and (col_per < 50): check_position = 1
+#            if(tol_per < 50) and (col_per > 50): check_position = 1
             if(check_position in (1, 2)):
-                c_std_per, c_vol_per, c_std_per1, c_pol_per = std_per, vol_per, std_per1, pol_per
+                c_std_per, c_vol_per, c_std_per1, c_pol_per, c_tol_per, c_col_per = std_per, vol_per, std_per1, pol_per, tol_per, col_per
                 order_position = check_position
                 cal_diff = std_max_diff
                 limit_diff = cal_diff
 #                if(cal_diff > max_diff): limit_diff = max_diff
                 cal_lever = c_list[sta] * 0.5 / limit_diff
                 print(sym_bol, itv, order_position)
-                if(cal_lever <= 5): break
+                break
     if(order_position in (1, 2)):
         upp_per = round(5 * abs(c_list[sta] - max(h_list[:sta])) / c_list[sta], 2)
         low_per = round(5 * abs(c_list[sta] - min(l_list[:sta])) / c_list[sta], 2)
@@ -166,7 +174,7 @@ def search_calc(sym_bol):
         if(order_position == 2) and (upp_per < low_per) and (0.5 > upp_per) and (0.5 < low_per): cal_result = 'true'
         if(order_position == 2) and (upp_per > low_per) and (0.5 < upp_per) and (0.5 > low_per): cal_result = 'fail'
         print(sym_bol, itv, order_position, round(cal_lever,2))
-        print(round(c_std_per,2), round(c_std_per1,2), round(c_vol_per,2), round(c_pol_per,2))
+        print(round(c_std_per,2), round(c_std_per1,2), round(c_vol_per,2), round(c_pol_per,2), round(c_tol_per,2), round(c_col_per,2))
         print(c_list[sta], max(h_list[:sta]), min(l_list[:sta]),c_list[0], upp_per, low_per)
     elif(std_diff < (max_diff * 2)): continue
     else: print(sym_bol, itv, order_position)
@@ -247,15 +255,15 @@ print(total_results)
 # added_symbols1 = added_list["symbol"].tolist()
 # added_symbols2 = added_list["price24hPcnt"].tolist()
 # added_symbols3 = added_list["turnover24h"].tolist()
-#print(added_symbols1[:30])
-#print(added_symbols3[:30])
-#print(added_symbols2[:30])
-#added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e7)]
-#  added_list = sort_list[(sort_list['lastPrice'] > 0.01) & (sort_list['lastPrice'] < 2) & (sort_list['turnover24h'] > 3e+07)]
-#  added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2))]
-#added_symbols = added_list["symbol"].tolist()
-#print(added_symbols)
-##############################################################################
+# print(added_symbols1[:30])
+# print(added_symbols3[:30])
+# print(added_symbols2[:30])
+# added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2)) & (sort_list['turnover24h'] > 3e7)]
+# # added_list = sort_list[(sort_list['lastPrice'] > 0.01) & (sort_list['lastPrice'] < 2) & (sort_list['turnover24h'] > 3e+07)]
+# # added_list = sort_list[(sort_list['lastPrice'] < (invest_usdt * 2))]
+# added_symbols = added_list["symbol"].tolist()
+# print(added_symbols)
+# #############################################################################
 # def search_calc(sym_bol):
 #   order_position = 9
 #   cal_result = 0
@@ -296,7 +304,7 @@ print(total_results)
 #     i = 0
 #     upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
 #     check_position = 0
-#     vol_list, pol_list, tol_list = [0], [0], [0]
+#     vol_list, pol_list, tol_list, col_list = [0], [0], [0], [0]
 #     i = 0
 #     for vol in range(len(t_list)-1, sta-1,-1):
 #                 if(h_list[vol] != l_list[vol]):
@@ -309,6 +317,8 @@ print(total_results)
 #                     pol_list.append(pol_list[i] + pol_cal)
 #                     tol_cal = (((h_list[vol] - o_list[vol]) - (o_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
 #                     tol_list.append(tol_list[i] + tol_cal)
+#                     col_cal = (((c_list[vol] - l_list[vol]) - (h_list[vol] - c_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
+#                     col_list.append(col_list[i] + col_cal)
 #                     cr_list.append(c_list[vol])
 #                     i = i + 1
 #     std_per = (cr_list[-1] - min(cr_list)) / (max(cr_list) - min(c_list)) * 100
@@ -322,6 +332,7 @@ print(total_results)
 #     print(sym_bol, vol_list)
 #     print(sym_bol, pol_list)
 #     print(sym_bol, tol_list)
+#     print(sym_bol, col_list)
 #     break
 # #-------------------------------------------------------------------------------
 #   order_return = [order_position, cal_result]
