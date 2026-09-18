@@ -96,12 +96,13 @@ def search_calc(sym_bol):
 #-------------------------------------------------------------------------------
     max_lever, min_lever, cal_lever, fr_per = 5, 10, 99, 0
     bk_x_diff, bk_n_diff, std_max_diff = 0, 0, 0
-    sta = 500
+    sta = 5
+#    sta = int(5 * 3 / itv)
     max_diff = c_list[sta] * 0.5 / max_lever
     min_diff = c_list[sta] * 0.5 / min_lever
-    cal_max, cal_min = max(c_list[sta:]), min(c_list[sta:])
-    xnum = c_list[sta:].index(cal_max) + sta
-    nnum = c_list[sta:].index(cal_min) + sta
+    cal_max, cal_min = max(h_list[sta:]), min(l_list[sta:])
+    xnum = h_list[sta:].index(cal_max) + sta
+    nnum = l_list[sta:].index(cal_min) + sta
     cal_diff = cal_max - cal_min
     cal_lever = c_list[sta] * 0.5 / cal_diff
     limit_diff = cal_diff
@@ -120,9 +121,10 @@ def search_calc(sym_bol):
         std_min_diff, std_max_diff = min(std_n_diff, std_x_diff), max(std_n_diff, std_x_diff)
         xnum = h_list[sta:].index(std_max) + sta
         nnum = l_list[sta:].index(std_min) + sta
-        if(std_diff >= (max_diff * 2)): break
-        if(std_diff >= (min_diff * 2)) and (h_list[std] >= c_list[sta] >= l_list[std]):
-#        if(std_diff >= (min_diff * 2)):
+        if(std_max_diff >= (max_diff * 1)): break
+#        if(std_diff >= (max_diff * 2)): break
+#        if(std_diff >= (min_diff * 2)) and (h_list[std] >= c_list[sta] >= l_list[std]):
+        if(std_max_diff >= (min_diff * 1)) and (xnum != nnum):
             upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
             check_position = 0
             vol_list, pol_list, tol_list, col_list, fol_list = [0], [0], [0], [0], [0]
@@ -143,21 +145,30 @@ def search_calc(sym_bol):
                     col_list.append(col_list[i] + (vol_cal * (-1)))
                     cr_list.append(c_list[vol])
                     i = i + 1
-            std_per = (cr_list[-1] - min(cr_list)) / (max(cr_list) - min(cr_list)) * 100
-#            vol_per = (vol_list[-1] - min(vol_list)) / (max(vol_list) - min(vol_list)) * 100
-            std_per1 = (cr_list[-1] - cr_list[0]) / (max(cr_list) - min(cr_list)) * 100
-            vol_per = (vol_list[-1] - vol_list[0]) / (max(vol_list) - min(vol_list)) * 100
-            pol_per = (pol_list[-1] - pol_list[0]) / (max(pol_list) - min(pol_list)) * 100
-            tol_per = (tol_list[-1] - tol_list[0]) / (max(tol_list) - min(tol_list)) * 100
-            col_per = (col_list[-1] - col_list[0]) / (max(col_list) - min(col_list)) * 100
-            if(tol_list[-1] < 0) and (fol_list[-1] > 0): check_position = 2
-            if(tol_list[-1] > 0) and (fol_list[-1] < 0): check_position = 1
-#            if(min(pol_list[-1], tol_list[-1], col_list[-1]) == col_list[-1]): check_position = 1
-#            if(max(pol_list[-1], tol_list[-1], col_list[-1]) == col_list[-1]): check_position = 2
+            if(max(cr_list) == min(cr_list)): std_per, std_per1 = 50, 0
+            else:
+                std_per = (cr_list[-1] - min(cr_list)) / (max(cr_list) - min(cr_list)) * 100
+                std_per1 = (cr_list[-1] - cr_list[0]) / (max(cr_list) - min(cr_list)) * 100
+            if(max(vol_list) == min(vol_list)): vol_per = 0
+            else: vol_per = (vol_list[-1] - vol_list[0]) / (max(vol_list) - min(vol_list)) * 100
+            if(max(pol_list) == min(pol_list)): pol_per = 0
+            else: pol_per = (pol_list[-1] - pol_list[0]) / (max(pol_list) - min(pol_list)) * 100
+            if(max(tol_list) == min(tol_list)): tol_per = 0
+            else: tol_per = (tol_list[-1] - tol_list[0]) / (max(tol_list) - min(tol_list)) * 100
+            if(max(col_list) == min(col_list)): col_per = 0
+            else: col_per = (col_list[-1] - col_list[0]) / (max(col_list) - min(col_list)) * 100
+            if(std_per1 > 0) and (tol_list[-1] < 0) and (fol_list[-1] > 0): check_position = 2
+            if(std_per1 < 0) and (tol_list[-1] > 0) and (fol_list[-1] < 0): check_position = 1
+#            if(std_per1 > 0) and (min(pol_list[-1], tol_list[-1], col_list[-1]) == col_list[-1]): check_position = 2
+#            if(std_per1 < 0) and (max(pol_list[-1], tol_list[-1], col_list[-1]) == col_list[-1]): check_position = 1
+#            if(std_per1 > 0) and (max(pol_list[-1], tol_list[-1], vol_list[-1]) != tol_list[-1]): check_position = 2
+#            if(std_per1 < 0) and (min(pol_list[-1], tol_list[-1], vol_list[-1]) != vol_list[-1]): check_position = 1
+#            if(std_per1 > 0) and (vol_list[-1] > pol_list[-1] > tol_list[-1]): check_position = 2
+#            if(std_per1 < 0) and (tol_list[-1] > pol_list[-1] > vol_list[-1]): check_position = 1
 #            if(tol_per > 50) and (col_per < 50): check_position = 1
 #            if(tol_per < 50) and (col_per > 50): check_position = 1
             if(check_position in (1, 2)):
-              if(abs(std_per1) <= 10): 
+#              if(abs(std_per1) <= 10): 
                 c_std_per, c_vol_per, c_std_per1, c_pol_per, c_tol_per, c_col_per = std_per, vol_per, std_per1, pol_per, tol_per, col_per
                 order_position = check_position
                 cal_diff = std_max_diff
