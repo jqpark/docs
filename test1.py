@@ -76,7 +76,7 @@ added_symbols3 = added_list["turnover24h"].tolist()
 #print(added_symbols)
 ##############################################################################
 def search_calc(sym_bol):
-  order_position = 9
+  order_position, check_position = 9, 0
   cal_result = 0
   itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720]
   for itv in itv_list:
@@ -124,7 +124,7 @@ def search_calc(sym_bol):
         if(std_diff >= (max_diff * 2)): break
         if(std_diff >= (min_diff * 2)) and (max(xnum, nnum) == std):
             upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
-            check_position = 0
+#            check_position = 0
             cr_list, vol_list, pol_list, tol_list, col_list, fol_list, lol_list = [], [0], [0], [0], [0], [0], [0]
             i = 0
             for vol in range(std-1, sta-1,-1):
@@ -145,6 +145,7 @@ def search_calc(sym_bol):
                     lol_list.append(cr_list[-1] - min(cr_list))
                     lol_cal = ((max(cr_list) - min(cr_list)) * len(cr_list) * 0.5)
                     if(lol_cal == 0): lol_per = 100
+#                    elif(cr_list[0] > cr_list[-1]): lol_per = ((lol_cal * 2) - sum(lol_list)) / lol_cal * 100
                     else: lol_per = sum(lol_list) / lol_cal * 100
                     if(col_cal == 0): col_per = 100
                     else: col_per = sum(fol_list) / col_cal * 100
@@ -162,19 +163,28 @@ def search_calc(sym_bol):
 #            if(max(col_list) == min(col_list)): col_per = 0
 #            else: col_per = (col_list[-1] - col_list[0]) / (max(col_list) - min(col_list)) * 100
             if(std_max_diff > max_diff): break
-            if(col_list[-1] > 0): check_position = 1
-            if(col_list[-1] <= 0): check_position = 2
-            if(std_per > 70) and (check_position == 5): check_position = 3
-            if(std_per < 30) and (check_position == 5): check_position = 4
-            if(check_position in (1, 2)):
+            if(lol_per < 100): check_position = 1
+            if(lol_per >= 100): check_position = 2
+#            if(check_position == 5):
+#                if(cr_list[0] < cr_list[-1]) and (lol_per > 100): check_position = 1
+#                if(cr_list[0] > cr_list[-1]) and (lol_per > 100): check_position = 2
+#                if(cr_list[0] < cr_list[-1]) and (lol_per < 100): check_position = 3
+#                if(cr_list[0] > cr_list[-1]) and (lol_per < 100): check_position = 4
+#            if(col_per < 100) and (check_position == 5): check_position = 1
+#            if(cr_list[0] > cr_list[-1]) and (col_per < 100) and (lol_per > 100): check_position = 1
+#            if(col_list[-1] > 0): check_position = 1
+#            if(col_list[-1] <= 0): check_position = 2
+#            if(std_per > 70) and (check_position == 5): check_position = 3
+#            if(std_per < 30) and (check_position == 5): check_position = 4
+            if(check_position in (1, 2, 3, 4)):
                 c_std_per, c_vol_per, c_tol_per, c_pol_per, c_col_per = std_per, vol_per, tol_per, pol_per, col_per
                 order_position = check_position
                 cal_diff = std_max_diff
                 limit_diff = cal_diff
                 cal_lever = c_list[sta] * 0.5 / limit_diff
-                print(sym_bol, itv, order_position, xnum, nnum, 'lol:',round(lol_per,2), round(col_per,2))
-                break
-    if(order_position in (1, 2)):
+#                print(sym_bol, itv, order_position, xnum, nnum, 'lol:',round(lol_per,2), round(col_per,2))
+#                break
+    if(order_position in (1, 2, 3, 4)):
         upp_per = round(5 * abs(c_list[sta] - max(h_list[:sta])) / c_list[sta], 2)
         low_per = round(5 * abs(c_list[sta] - min(l_list[:sta])) / c_list[sta], 2)
         xnum = h_list[:sta].index(max(h_list[:sta]))
@@ -186,6 +196,7 @@ def search_calc(sym_bol):
 #        print(sym_bol, itv, order_position, round(cal_lever,2))
 #        print(round(c_std_per,2), round(c_std_per1,2), round(c_vol_per,2), round(c_pol_per,2), round(c_tol_per,2), round(c_col_per,2))
 #        print(c_list[sta], max(h_list[:sta]), min(l_list[:sta]),c_list[0], upp_per, low_per)
+        print(sym_bol, itv, order_position, xnum, nnum, 'lol:',round(lol_per,2), round(col_per,2))
         print(c_list[sta], cr_list[-1], max(cr_list), min(cr_list),len(cr_list))
     elif(std_max_diff < (max_diff * 1)): continue
     else: print(sym_bol, itv, order_position)
