@@ -124,7 +124,7 @@ def search_calc(sym_bol):
         if(std_diff >= (max_diff * 2)): break
         if(std_diff >= (min_diff * 1)) and (max(xnum, nnum) == std):
             upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
-#            check_position = 0
+            check_position = 0
             cr_list, vol_list, pol_list, tol_list, col_list, fol_list, lol_list = [], [0], [0], [0], [0], [0], [0]
             i = 0
             for vol in range(std-1, sta-1,-1):
@@ -166,8 +166,6 @@ def search_calc(sym_bol):
 #            if(max(col_list) == min(col_list)): col_per = 0
 #            else: col_per = (col_list[-1] - col_list[0]) / (max(col_list) - min(col_list)) * 100
             if(std_max_diff > max_diff): break
-            if(lol_per < 100): check_position = 1
-            if(lol_per >= 100): check_position = 2
 #            if(check_position == 5):
 #                if(cr_list[0] < cr_list[-1]) and (lol_per > 100): check_position = 1
 #                if(cr_list[0] > cr_list[-1]) and (lol_per > 100): check_position = 2
@@ -175,10 +173,10 @@ def search_calc(sym_bol):
 #                if(cr_list[0] > cr_list[-1]) and (lol_per < 100): check_position = 4
 #            if(col_per < 100) and (check_position == 5): check_position = 1
 #            if(cr_list[0] > cr_list[-1]) and (col_per < 100) and (lol_per > 100): check_position = 1
-#            if(col_list[-1] > 0): check_position = 1
-#            if(col_list[-1] <= 0): check_position = 2
-#            if(std_per > 70) and (check_position == 5): check_position = 3
-#            if(std_per < 30) and (check_position == 5): check_position = 4
+            if(lol_per < 100) and (pop_per > 0) and (abs(pop_per) < 100): check_position = 1
+            if(lol_per > 100) and (pop_per > 0) and (abs(pop_per) > 100): check_position = 2
+            if(lol_per > 100) and (pop_per < 0) and (abs(pop_per) < 100): check_position = 2
+            if(lol_per < 100) and (pop_per < 0) and (abs(pop_per) > 100): check_position = 1
             if(check_position in (1, 2, 3, 4)):
                 c_std_per, c_vol_per, c_tol_per, c_pol_per, c_col_per = std_per, vol_per, tol_per, pol_per, col_per
                 order_position = check_position
@@ -329,24 +327,38 @@ print(total_results)
 #     i = 0
 #     upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
 #     check_position = 0
-#     vol_list, pol_list, tol_list, col_list, v_tol_list = [0], [0], [0], [0], [0]
+#     cr_list, vol_list, pol_list, tol_list, col_list, fol_list, lol_list = [], [0], [0], [0], [0], [0], [0]
+#     pop_per_list, col_per_list, lol_per_list = [], [], []
 #     i = 0
 #     for vol in range(len(t_list)-1, sta-1,-1):
-#                 if(h_list[vol] != l_list[vol]):
-#                     upp_vol = max(c_list[vol], o_list[vol]) - h_list[vol]
-#                     mid_vol = c_list[vol] - o_list[vol]
-#                     low_vol = min(c_list[vol], o_list[vol]) - l_list[vol]
-#                     vol_cal = ((upp_vol + mid_vol + low_vol) / (h_list[vol] - l_list[vol])) * v_list[vol]
-#                     vol_list.append(vol_list[i] + vol_cal)
-#                     pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
-#                     pol_list.append(pol_list[i] + pol_cal)
-#                     tol_cal = (((h_list[vol] - o_list[vol]) - (o_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
-#                     tol_list.append(tol_list[i] + tol_cal)
-#                     v_tol_list.append(v_tol_list[i] + (tol_cal * (-1)))
-#                     col_cal = (((h_list[vol] - c_list[vol]) - (c_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
-#                     col_list.append(col_list[i] + col_cal)
-#                     cr_list.append(c_list[vol])
-#                     i = i + 1
+#         if(h_list[vol] != l_list[vol]):
+#             upp_vol = max(c_list[vol], o_list[vol]) - h_list[vol]
+#             mid_vol = c_list[vol] - o_list[vol]
+#             low_vol = min(c_list[vol], o_list[vol]) - l_list[vol]
+#             vol_cal = ((upp_vol + mid_vol + low_vol) / (h_list[vol] - l_list[vol])) * v_list[vol]
+#             vol_list.append(vol_list[i] + vol_cal)
+#             pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
+#             pol_list.append(pol_list[i] + pol_cal)
+#             tol_cal = (((h_list[vol] - o_list[vol]) - (o_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
+#             tol_list.append(tol_list[i] + tol_cal)
+#             fol_list.append(fol_list[i] + v_list[vol])
+#             col_cal = ((fol_list[-1] - fol_list[0]) * len(fol_list) * 0.5)
+#             col_list.append(col_cal - sum(fol_list))
+#             cr_list.append(c_list[vol])
+#             lol_list.append(cr_list[-1] - min(cr_list))
+#             lol_cal = ((max(cr_list) - min(cr_list)) * len(cr_list) * 0.5)
+#             pop_cal = ((max(pol_list[1:]) - min(pol_list[1:])) * (len(pol_list)-1) * 0.5)
+#             if(pop_cal == 0): pop_per = 100
+#             else: pop_per = sum(pol_list) / pop_cal * 100
+#             if(lol_cal == 0): lol_per = 100
+# #                    elif(cr_list[0] > cr_list[-1]): lol_per = ((lol_cal * 2) - sum(lol_list)) / lol_cal * 100
+#             else: lol_per = sum(lol_list) / lol_cal * 100
+#             if(col_cal == 0): col_per = 100
+#             else: col_per = sum(fol_list) / col_cal * 100
+#             pop_per_list.append(round(pop_per,2))
+#             col_per_list.append(round(col_per,2))
+#             lol_per_list.append(round(lol_per,2))
+#             i = i + 1
 #     std_per = (cr_list[-1] - min(cr_list)) / (max(cr_list) - min(c_list)) * 100
 #     vol_per = (vol_list[-1] - min(vol_list)) / (max(vol_list) - min(vol_list)) * 100
 #     std_per1 = (cr_list[-1] - cr_list[0]) / (max(cr_list) - min(cr_list)) * 100
@@ -355,11 +367,9 @@ print(total_results)
 # #    print(round(c_std_per,2), round(c_vol_per,2), round(c_std_per1,2), round(c_vol_per1,2))
 # #    print(c_list[sta], max(h_list[:sta]), min(l_list[:sta]),c_list[0], upp_per, low_per)
 #     print(sym_bol, cr_list)
-# #    print(sym_bol, vol_list)
-# #    print(sym_bol, pol_list)
-#     print(sym_bol, tol_list)
-#     print(sym_bol, v_tol_list)
-# #    print(sym_bol, col_list)
+#     print(sym_bol, lol_per_list)
+#     print(sym_bol, pop_per_list)
+#     print(sym_bol, col_per_list)
 #     break
 # #-------------------------------------------------------------------------------
 #   order_return = [order_position, cal_result]
