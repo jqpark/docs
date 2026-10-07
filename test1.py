@@ -111,7 +111,7 @@ def search_calc(sym_bol):
     vol_list, pol_list = [0], [0]
     upper_v1, lower_v1, upper_p1, lower_p1 = 0, 0, 0, 0
     vol_list1, pol_list1 = [0], [0]
-    std_list, cr_list = [], []
+    std_list, cr_list, result_list = [], [], []
     per_diff, per1_diff = 0, 0      
     i = 0
     for std in range(sta,len(t_list)):
@@ -172,18 +172,20 @@ def search_calc(sym_bol):
 #                if(cr_list[0] < cr_list[-1]) and (lol_per < 100): check_position = 3
 #                if(cr_list[0] > cr_list[-1]) and (lol_per < 100): check_position = 4
 #            if(col_per < 100) and (check_position == 5): check_position = 1
-#            if(cr_list[0] > cr_list[-1]) and (col_per < 100) and (lol_per > 100): check_position = 1
-            if(lol_per < 100) and (pop_per > 0) and (abs(pop_per) < 100): check_position = 1
-            if(lol_per > 100) and (pop_per > 0) and (abs(pop_per) > 100): check_position = 2
-            if(lol_per > 100) and (pop_per < 0) and (abs(pop_per) < 100): check_position = 2
-            if(lol_per < 100) and (pop_per < 0) and (abs(pop_per) > 100): check_position = 1
+            if(cr_list[0] < cr_list[-1]) and (pol_list[-1] < 0): check_position = 1
+            if(cr_list[0] > cr_list[-1]) and (pol_list[-1] > 0): check_position = 2
+#            if(col_per > 100) and (pop_per < 0) and (abs(pop_per) > 100): check_position = 1
+#            if(col_per > 100) and (pop_per > 0) and (abs(pop_per) > 100): check_position = 2
+#            if(col_per < 100) and (pop_per < 0) and (abs(pop_per) > 100): check_position = 3
+#            if(col_per < 100) and (pop_per > 0) and (abs(pop_per) > 100): check_position = 4
             if(check_position in (1, 2, 3, 4)):
                 c_std_per, c_vol_per, c_tol_per, c_pol_per, c_col_per = std_per, vol_per, tol_per, pol_per, col_per
                 order_position = check_position
                 cal_diff = std_max_diff
                 limit_diff = cal_diff
                 cal_lever = c_list[sta] * 0.5 / limit_diff
-#                print(sym_bol, itv, order_position, xnum, nnum, 'lol:',round(lol_per,2), round(col_per,2))
+                result_list.append(order_position)
+                print(sym_bol, itv, order_position, cr_list[0], cr_list[-1])
 #                break
     if(order_position in (1, 2, 3, 4)):
         upp_per = round(5 * abs(c_list[sta] - max(h_list[:sta])) / c_list[sta], 2)
@@ -198,9 +200,10 @@ def search_calc(sym_bol):
 #        print(round(c_std_per,2), round(c_std_per1,2), round(c_vol_per,2), round(c_pol_per,2), round(c_tol_per,2), round(c_col_per,2))
 #        print(c_list[sta], max(h_list[:sta]), min(l_list[:sta]),c_list[0], upp_per, low_per)
         print(sym_bol, itv, order_position, xnum, nnum, 'lol:',round(lol_per,2), round(col_per,2), round(pop_per,2))
-        print(c_list[sta], cr_list[-1], max(cr_list), min(cr_list),len(cr_list))
+        print(cr_list[0], cr_list[-1], max(cr_list), min(cr_list),len(cr_list))
     elif(std_max_diff < (max_diff * 1)): continue
     else: print(sym_bol, itv, order_position)
+    print(sym_bol, result_list)
     break
 #-------------------------------------------------------------------------------
   order_return = [order_position, cal_result]
