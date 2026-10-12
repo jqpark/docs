@@ -1,6 +1,7 @@
 #Replit
 ##############################################################################
-# bybit api
+##############################################################################
+bybit api
 from pybit.unified_trading import HTTP
 import pandas as pd
 import time
@@ -115,9 +116,9 @@ def search_calc(sym_bol):
     i = 0
     upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
     check_position = 0
-    cr_list, vol_list1, pol_list1, tol_list1, col_list, fol_list, lol_list = [], [0], [0], [0], [0], [0], [0]
-    pol_per_list, tol_per_list, vol_per_list, cr_per_list = [], [], [], []
-    vol_list, pol_list, tol_list = [], [], []
+    cr_list, vol_list1, pol_list1, tol_list1, col_list, fol_list, lol_list, vov_list1 = [], [0], [0], [0], [0], [0], [0], [0]
+    pol_per_list, tol_per_list, vol_per_list, cr_per_list, vov_per_list = [], [], [], [], []
+    vol_list, pol_list, tol_list, vov_list = [], [], [], []
     i = 0
     for vol in range(len(t_list)-1, sta-1,-1):
         if(h_list[vol] != l_list[vol]):
@@ -130,6 +131,8 @@ def search_calc(sym_bol):
             pol_list1.append(pol_list1[i] + pol_cal)
             tol_cal = (((h_list[vol] - o_list[vol]) - (o_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
             tol_list1.append(tol_list1[i] + tol_cal)
+            vov_cal = (((c_list[vol] - l_list[vol]) - (h_list[vol] - c_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
+            vov_list1.append(vov_list1[i] + vov_cal)
             fol_list.append(fol_list[i] + v_list[vol])
             col_cal = ((fol_list[-1] - fol_list[0]) * len(fol_list) * 0.5)
             col_list.append(col_cal - sum(fol_list))
@@ -152,27 +155,31 @@ def search_calc(sym_bol):
 #            else: pol_per = (pol_list[-1] - pol_list[0]) / (max(pol_list) - min(pol_list)) * 100
 #            if(max(tol_list) == min(tol_list)): tol_per = 0
 #            else: tol_per = (tol_list[-1] - tol_list[0]) / (max(tol_list) - min(tol_list)) * 100
-            vol_list.append(vol_list1[-1]), pol_list.append(pol_list1[-1]), tol_list.append(tol_list1[-1])
+            vol_list.append(vol_list1[-1]), pol_list.append(pol_list1[-1]), tol_list.append(tol_list1[-1]), vov_list.append(vov_list1[-1])
             if(vol_list1 == []) or (max(vol_list) == min(vol_list)): vol_per = 0
             else: vol_per = (vol_list[-1] - vol_list[1]) / (max(vol_list) - min(vol_list)) * 100
             if(pol_list == []) or (max(pol_list) == min(pol_list)): pol_per = 0
             else: pol_per = (pol_list[-1] - pol_list[1]) / (max(pol_list) - min(pol_list)) * 100
             if(tol_list == []) or (max(tol_list) == min(tol_list)): tol_per = 0
             else: tol_per = (tol_list[-1] - tol_list[1]) / (max(tol_list) - min(tol_list)) * 100
+            if(vov_list == []) or (max(vov_list) == min(vov_list)): vov_per = 0
+            else: vov_per = (vov_list[-1] - vov_list[1]) / (max(vov_list) - min(vov_list)) * 100
             cr_per_list.append(round(std_per,2))
             vol_per_list.append(round(vol_per,2))
             pol_per_list.append(round(pol_per,2))
             tol_per_list.append(round(tol_per,2))
+            vov_per_list.append(round(vov_per,2))
             i = i + 1
     std_per1 = (cr_list[-1] - min(cr_list)) / (max(cr_list) - min(cr_list)) * 100
     vol_per1 = (vol_list[-1] - min(vol_list)) / (max(vol_list) - min(vol_list)) * 100
 #    print(sym_bol, itv, order_position, round(cal_lever,2))
 #    print(round(c_std_per,2), round(c_vol_per,2), round(c_std_per1,2), round(c_vol_per1,2))
 #    print(c_list[sta], max(h_list[:sta]), min(l_list[:sta]),c_list[0], upp_per, low_per)
-    print(sym_bol, cr_per_list)
-    print(sym_bol, vol_per_list)
-    print(sym_bol, pol_per_list)
-    print(sym_bol, tol_per_list)
+    print(sym_bol, cr_list)
+#    print(sym_bol, cr_per_list)
+    print(sym_bol, vov_list)
+    print(sym_bol, pol_list)
+    print(sym_bol, tol_list)
     break
 #-------------------------------------------------------------------------------
   order_return = [order_position, cal_result]
@@ -309,7 +316,7 @@ print(total_results)
 #         if(std_diff >= (min_diff * 1)) and (max(xnum, nnum) == std):
 #             upper_v, lower_v, upper_p, lower_p = 0, 0, 0, 0
 #             check_position = 0
-#             cr_list, vol_list, pol_list, tol_list, col_list, fol_list, lol_list = [], [0], [0], [0], [0], [0], [0]
+#             cr_list, vol_list, pol_list, tol_list, col_list, fol_list, lol_list, vov_list = [], [0], [0], [0], [0], [0], [0], [0]
 #             i = 0
 #             for vol in range(std-1, sta-1,-1):
 #                 if(h_list[vol] != l_list[vol]):
@@ -322,6 +329,8 @@ print(total_results)
 #                     pol_list.append(pol_list[i] + pol_cal)
 #                     tol_cal = (((h_list[vol] - o_list[vol]) - (o_list[vol] - l_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
 #                     tol_list.append(tol_list[i] + tol_cal)
+#                     vov_cal = (((c_list[vol] - l_list[vol]) - (h_list[vol] - c_list[vol])) / (h_list[vol] - l_list[vol])) * v_list[vol]
+#                     vov_list.append(vov_list[i] + vov_cal)
 #                     fol_list.append(fol_list[i] + v_list[vol])
 #                     col_cal = ((fol_list[-1] - fol_list[0]) * len(fol_list) * 0.5)
 #                     col_list.append(col_cal - sum(fol_list))
@@ -341,13 +350,15 @@ print(total_results)
 #             else:
 #                 std_per1= (cr_list[-1] - min(cr_list)) / (max(cr_list) - min(cr_list)) * 100
 #                 std_per = (cr_list[-1] - cr_list[0]) / (max(cr_list) - min(cr_list)) * 100
-#             vol_list, pol_list, tol_list = vol_list[1:], pol_list[1:], tol_list[1:]
+#             vol_list, pol_list, tol_list, vov_list = vol_list[1:], pol_list[1:], tol_list[1:], vov_list[1:]
 #             if(vol_list == []) or (max(vol_list) == min(vol_list)): vol_per = 0
 #             else: vol_per = (vol_list[-1] - vol_list[1]) / (max(vol_list) - min(vol_list)) * 100
 #             if(pol_list == []) or (max(pol_list) == min(pol_list)): pol_per = 0
 #             else: pol_per = (pol_list[-1] - pol_list[1]) / (max(pol_list) - min(pol_list)) * 100
 #             if(tol_list == []) or (max(tol_list) == min(tol_list)): tol_per = 0
 #             else: tol_per = (tol_list[-1] - tol_list[1]) / (max(tol_list) - min(tol_list)) * 100
+#             if(vov_list == []) or (max(vov_list) == min(vov_list)): vov_per = 0
+#             else: vov_per = (vov_list[-1] - vov_list[1]) / (max(vov_list) - min(vov_list)) * 100
 # #            if(max(col_list) == min(col_list)): col_per = 0
 # #            else: col_per = (col_list[-1] - col_list[0]) / (max(col_list) - min(col_list)) * 100
 #             if(std_max_diff > max_diff): break
@@ -357,8 +368,8 @@ print(total_results)
 # #                if(cr_list[0] < cr_list[-1]) and (lol_per < 100): check_position = 3
 # #                if(cr_list[0] > cr_list[-1]) and (lol_per < 100): check_position = 4
 # #            if(col_per < 100) and (check_position == 5): check_position = 1
-#             if(std_per < min(pol_per, tol_per)): check_position = 1
-#             if(std_per > max(pol_per, tol_per)): check_position = 2
+#             if(std_per < min(pol_per, tol_per)) and (std_per > vov_per): check_position = 1
+#             if(std_per > max(pol_per, tol_per)) and (std_per < vov_per): check_position = 2
 # #            if(cr_list[0] > cr_list[-1]) and (pol_list[-1] > 0): check_position = 22
 # #            if(cr_list[0] < cr_list[-1]) and (vol_list[-1] < 0): check_position = 3
 # #            if(cr_list[0] > cr_list[-1]) and (vol_list[-1] > 0): check_position = 4
@@ -379,7 +390,7 @@ print(total_results)
 # #            if(col_per < 100) and (pop_per > 0) and (abs(pop_per) < 100): check_position = 7
 # #            if(col_per < 100) and (pop_per < 0) and (abs(pop_per) < 100): check_position = 8            
 #             if(check_position in (1, 2, 3, 4, 5, 6)):
-#                 c_std_per, c_vol_per, c_tol_per, c_pol_per, c_col_per = std_per, vol_per, tol_per, pol_per, col_per
+#                 c_std_per, c_vol_per, c_tol_per, c_pol_per, c_col_per, c_vov_per = std_per, vol_per, tol_per, pol_per, col_per, vov_per
 #                 cr_list_0, cr_list_1 = cr_list[0], cr_list[-1]
 #                 order_position = check_position
 #                 cal_diff = std_max_diff
@@ -399,7 +410,7 @@ print(total_results)
 #         if(order_position == 2) and (upp_per < low_per) and (0.5 > upp_per) and (0.5 < low_per): cal_result = 'true'
 #         if(order_position == 2) and (upp_per > low_per) and (0.5 < upp_per) and (0.5 > low_per): cal_result = 'fail'
 #         print(sym_bol, itv, order_position, round(cal_lever,2))
-#         print(round(c_std_per,2), round(c_vol_per,2), round(c_pol_per,2), round(c_tol_per,2), round(c_col_per,2))
+#         print(round(c_std_per,2), round(c_vol_per,2), round(c_pol_per,2), round(c_tol_per,2), round(c_col_per,2), round(c_vov_per,2))
 #         print(c_list[sta], max(h_list[:sta+1]), min(l_list[:sta+1]),c_list[0], upp_per, low_per)
 # #        print(sym_bol, itv, order_position, xnum, nnum, 'lol:',round(vol_per,2), round(tol_per,2), round(pol_per,2))
 # #        print(cr_list_0, cr_list_1, c_list[0], max(h_list[:sta]), min(l_list[:sta]),len(cr_list))
@@ -416,7 +427,6 @@ print(total_results)
 #   if(order_return[0] in (1, 2, 3, 4)) and (order_return[1] == 'true'): total_results[0] = total_results[0] + 1
 #   if(order_return[0] in (1, 2, 3, 4)) and (order_return[1] == 'fail'): total_results[1] = total_results[1] + 1
 # print(total_results)
-##############################################################################
 ##############################################################################
 # #bybit api
 # from pybit.unified_trading import HTTP
