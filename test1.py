@@ -190,6 +190,7 @@ def search_calc(sym_bol):
     cal_vol = sum(range_vol[fr_num:mid_list[fr_num]+1])
     cal_per = cal_vol / sum_vol * 100
     mid_min, mid_max = step_num[fr_num], step_num[mid_list[fr_num]+1]
+    min_num, max_num = fr_num, mid_list[fr_num]+1
     mid_diff = abs(mid_min - mid_max)
     mid_lever = None
     if(mid_diff != 0): mid_lever = c_list[sta] * 0.5 / mid_diff
@@ -201,9 +202,17 @@ def search_calc(sym_bol):
     low_diff = abs(c_list[sta] - mid_min)
     if(upp_diff != 0): upp_lever = c_list[sta] * 0.5 / upp_diff
     if(low_diff != 0): low_lever = c_list[sta] * 0.5 / low_diff
-    if(min(upp_lever, low_lever) > min_lever): continue
-    print(sym_bol, round(cal_per, 2))
-    print(len(range_vol),fr_num, mid_list[fr_num]+1, now_point)
+        
+    if(min_num < now_point < max_num): order_position = 7
+    if(max(min_num, now_point, max_num) == now_point): order_position = 1
+    if(min(min_num, now_point, max_num) == now_point): order_position = 2
+    if(min(upp_lever, low_lever) < max_lever):
+        if(order_position == 1): order_position = 3
+        if(order_position == 2): order_position = 4
+            
+    if(order_position != 7) and (min(upp_lever, low_lever) > min_lever): continue
+    print(sym_bol, itv, order_position, round(cal_per, 2))
+    print(len(range_vol), min_num, max_num, now_point)
     print(c_list[sta], mid_min, mid_max)
     print(round(mid_lever, 2), round(upp_lever, 2), round(low_lever, 2))
 
@@ -227,10 +236,19 @@ def search_calc(sym_bol):
 # #     print(vol_list)
     break
 #-------------------------------------------------------------------------------
-  order_return = [order_position, cal_result]
+  order_return = [order_position]
   return(order_return)
+total_results = [0, 0, 0, 0, 0]
 for sym_bol in added_symbols[:30]:
-  order_return = search_calc(sym_bol)
+    order_return = search_calc(sym_bol)
+    if(order_return[0] == 1): total_results[0] += 1
+    if(order_return[1] == 2): total_results[1] += 1
+    if(order_return[2] == 3): total_results[2] += 1
+    if(order_return[3] == 4): total_results[3] += 1
+    if(order_return[4] == 7): total_results[4] += 1
+#    if(order_return[0] in (1, 2, 3, 4)): total_results[0] = total_results[0] + 1
+#    if(order_return[0] in (1, 2, 3, 4)): total_results[1] = total_results[1] + 1
+print(total_results)
 ##############################################################################
 # #############################################################################
 # #bybit api
