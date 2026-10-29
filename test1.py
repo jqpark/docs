@@ -49,7 +49,8 @@ df = pd.DataFrame(tickers)
 df['turnover24h'] = df['turnover24h'].astype(float)
 df['lastPrice'] = df['lastPrice'].astype(float)
 df['price24hPcnt'] = df['price24hPcnt'].astype(float)
-trun_list = df.sort_values('turnover24h', key=lambda x: x.abs(), ascending=False, ignore_index=True)
+#trun_list = df.sort_values('turnover24h', key=lambda x: x.abs(), ascending=False, ignore_index=True)
+trun_list = df.sort_values('price24hPcnt', key=lambda x: x.abs(), ascending=False, ignore_index=True)
 trun_symbols = trun_list["symbol"].tolist()
 added_trun = trun_list[(trun_list['lastPrice'] < (invest_usdt * 2))]
 
@@ -118,7 +119,7 @@ def search_calc(sym_bol):
     cal_per = cal_diff / max_diff * 100
     limit_diff = cal_diff
 
-    max_price, min_price = c_list[0] + max_diff, c_list[0] - max_diff
+    max_price, min_price = c_list[0] + (max_diff * 2), c_list[0] - (max_diff * 2)
     for std in range(len(t_list)-1,sta-1,-1):
         if(h_list[std] <= max_price) and (l_list[std] >= min_price): break
     std_max, std_min = max(h_list[sta:std+1]), min(l_list[sta:std+1])
@@ -158,21 +159,51 @@ def search_calc(sym_bol):
                 else: cal_vol = 0
                 range_vol[num] = range_vol[num] + cal_vol
             if(step_num[num] <= c_list[sta] < step_num[num + 1]): now_point = num
-    
+
     sum_vol = sum(range_vol)
     vol_list = [0] * len(range_vol)
 
-#    for upp in range(now_point, len(range_vol)):
-#        upp_vol = sum(range_vol[now_point:upp+1])
-#        upp_per = upp_vol / sum_vol * 100
-#        if(upp_per > 30): break
-#    for low in range(now_point, -1, -1):
-#        low_vol = sum(range_vol[low:now_point+1])
-#        low_per = low_vol / sum_vol * 100
-#        if(low_per > 30): break
-#    if(max(upp_per, low_per, 30) == 30): continue
+      
+#     for upp in range(now_point, len(range_vol)):
+#         upp_vol = sum(range_vol[now_point:upp+1])
+#         upp_per = upp_vol / sum_vol * 100
+#         if(upp_per > 30): break
+#     for low in range(now_point, -1, -1):
+#         low_vol = sum(range_vol[low:now_point+1])
+#         low_per = low_vol / sum_vol * 100
+#         if(low_per > 30): break
+#     if(max(upp_per, low_per, 30) == 30): continue
 
-   
+#     lower_limit = step_num[low] - (min_diff * 0.2)
+#     upper_limit = step_num[upp] + (min_diff * 0.2)
+#     upp_diff = abs(c_list[sta] - upper_limit)
+#     low_diff = abs(c_list[sta] - lower_limit)
+#     if(upp_diff != 0): upp_lever = c_list[sta] * 0.5 / upp_diff
+#     if(low_diff != 0): low_lever = c_list[sta] * 0.5 / low_diff
+
+#     order_position = 8
+#     if(min(upp_per, low_per, 30) == 30):
+#         if(abs(upp - now_point) < abs(low - now_point)): order_position = 1
+#         if(abs(upp - now_point) > abs(low - now_point)): order_position = 2        
+#         if(abs(upp - now_point) == abs(low - now_point)): order_position = 7
+#     if(upp_per > 30 > low_per): order_position = 5
+#     if(upp_per < 30 < low_per): order_position = 6
+#     cal_lever = min(upp_lever, low_lever)
+#     if(cal_lever < max_lever):
+#         if(order_position == 1): order_position = 3
+#         if(order_position == 2): order_position = 4
+#     mid_per = max(upp_diff, low_diff) / cal_diff * 100
+#     std_per = std_diff / cal_diff * 100
+#     print(sym_bol, itv, order_position, round(cal_lever,2))
+# #    print(sym_bol, c_list[sta], cal_max, cal_min, std_max, std_min)
+# #    print(sym_bol, cal_diff, step_range, len(step_num))
+#     print(sym_bol, itv, round(upp_lever,2), round(low_lever,2))
+#     print(sym_bol, step_num[now_point], std_max, std_min, step_num[upp], step_num[low])
+#     print(sym_bol, len(step_num), now_point, upp, round(mid_per, 2), low, round(std_per, 2))
+#     if(min(upp_lever, low_lever) > min_lever): continue
+# #     print(vol_list)
+
+
     mid_list = [0] * len(range_vol)
     mid_vlist = [0] * len(range_vol)
     fr = 0
@@ -196,44 +227,26 @@ def search_calc(sym_bol):
     if(mid_diff != 0): mid_lever = c_list[sta] * 0.5 / mid_diff
 #    if(mid_lever > min_lever): continue
 
-#     lower_limit = step_num[low] - (min_diff * 0.2)
-#     upper_limit = step_num[upp] + (min_diff * 0.2)
     upp_diff = abs(c_list[sta] - mid_max)
     low_diff = abs(c_list[sta] - mid_min)
     if(upp_diff != 0): upp_lever = c_list[sta] * 0.5 / upp_diff
     if(low_diff != 0): low_lever = c_list[sta] * 0.5 / low_diff
-        
+
     if(min_num < now_point < max_num): order_position = 7
     if(max(min_num, now_point, max_num) == now_point): order_position = 1
     if(min(min_num, now_point, max_num) == now_point): order_position = 2
     if(min(upp_lever, low_lever) < max_lever):
         if(order_position == 1): order_position = 3
         if(order_position == 2): order_position = 4
-            
+
     if(order_position != 7) and (min(upp_lever, low_lever) > min_lever): continue
+    mid_per = mid_diff / cal_diff * 100
+    std_per = std_diff / cal_diff * 100
     print(sym_bol, itv, order_position, round(cal_per, 2))
     print(len(range_vol), min_num, max_num, now_point)
-    print(c_list[sta], mid_min, mid_max)
+    print(c_list[sta], mid_min, mid_max, round(mid_per, 2), round(std_per, 2))
     print(round(mid_lever, 2), round(upp_lever, 2), round(low_lever, 2))
 
-#     order_position = 8
-#     if(min(upp_per, low_per, 30) == 30):
-#         if(abs(upp - now_point) < abs(low - now_point)): order_position = 1
-#         if(abs(upp - now_point) > abs(low - now_point)): order_position = 2        
-#         if(abs(upp - now_point) == abs(low - now_point)): order_position = 7
-#     if(max(upp_per, low_per, 30) == upp_per): order_position = 2
-#     if(max(upp_per, low_per, 30) == low_per): order_position = 1
-#     cal_lever = min(upp_lever, low_lever)
-#     if(cal_lever < max_lever):
-#         if(order_position == 1): order_position = 3
-#         if(order_position == 2): order_position = 4
-#     print(sym_bol, itv, order_position, round(cal_lever,2))
-# #    print(sym_bol, c_list[sta], cal_max, cal_min, std_max, std_min)
-# #    print(sym_bol, cal_diff, step_range, len(step_num))
-#     print(sym_bol, itv, round(upp_lever,2), round(low_lever,2))
-#     print(sym_bol, step_num[now_point], std_max, std_min, step_num[upp], step_num[low])
-#     print(sym_bol, len(step_num), now_point, upp, round(upp_per, 2), low, round(low_per, 2))
-# #     print(vol_list)
     break
 #-------------------------------------------------------------------------------
   order_return = [order_position]
@@ -241,11 +254,12 @@ def search_calc(sym_bol):
 total_results = [0, 0, 0, 0, 0]
 for sym_bol in added_symbols[:30]:
     order_return = search_calc(sym_bol)
+    print(sym_bol, 'finish')
     if(order_return[0] == 1): total_results[0] += 1
-    if(order_return[1] == 2): total_results[1] += 1
-    if(order_return[2] == 3): total_results[2] += 1
-    if(order_return[3] == 4): total_results[3] += 1
-    if(order_return[4] == 7): total_results[4] += 1
+    if(order_return[0] == 2): total_results[1] += 1
+    if(order_return[0] == 3): total_results[2] += 1
+    if(order_return[0] == 4): total_results[3] += 1
+    if(order_return[0] == 7): total_results[4] += 1
 #    if(order_return[0] in (1, 2, 3, 4)): total_results[0] = total_results[0] + 1
 #    if(order_return[0] in (1, 2, 3, 4)): total_results[1] = total_results[1] + 1
 print(total_results)
