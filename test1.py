@@ -120,14 +120,17 @@ def search_calc(sym_bol):
     limit_diff = cal_diff
 
     max_price, min_price = c_list[0] + (max_diff * 2), c_list[0] - (max_diff * 2)
-    for std in range(len(t_list)-1,sta-1,-1):
-        if(h_list[std] <= max_price) and (l_list[std] >= min_price): break
-    std_max, std_min = max(h_list[sta:std+1]), min(l_list[sta:std+1])
-    std_diff = std_max - std_min
-    std_x_diff, std_n_diff = abs(c_list[sta] - std_max), abs(c_list[sta] - std_min)
-    std_min_diff, std_max_diff = min(std_n_diff, std_x_diff), max(std_n_diff, std_x_diff)
-    xnum = h_list[sta:std+1].index(std_max) + sta
-    nnum = l_list[sta:std+1].index(std_min) + sta
+#    for std in range(len(t_list)-1,sta-1,-1):
+#        if(h_list[std] <= max_price) and (l_list[std] >= min_price): break
+    for std in range(len(t_list)):
+#        if(h_list[std] > max_price) or (l_list[std] < min_price): break
+        std_max, std_min = max(h_list[sta:std+1]), min(l_list[sta:std+1])
+        std_diff = std_max - std_min
+        std_x_diff, std_n_diff = abs(c_list[sta] - std_max), abs(c_list[sta] - std_min)
+        std_min_diff, std_max_diff = min(std_n_diff, std_x_diff), max(std_n_diff, std_x_diff)
+        xnum = h_list[sta:std+1].index(std_max) + sta
+        nnum = l_list[sta:std+1].index(std_min) + sta
+        if(std_diff >= abs(max_price - min_price)): break
 #    print(std)
     gap_num = int(std_diff / float(tick_size))
 #    print(sym_bol, gap_num)
@@ -145,7 +148,8 @@ def search_calc(sym_bol):
 #    print(len(step_num))
     range_num = [0] * (len(step_num) - 1)
     range_vol = range_num.copy()
-    for cal in range(std + 1):
+    for cal in range(std - 1):
+#    for cal in range(len(t_list)):
         for num in range(len(range_num)):
             if (l_list[cal] <= step_num[num + 1] and h_list[cal] >= step_num[num]):
                 range_num[num] += 1
@@ -162,7 +166,14 @@ def search_calc(sym_bol):
 
     sum_vol = sum(range_vol)
     vol_list = [0] * len(range_vol)
-
+    for vol in range(len(range_vol)):
+        vol_per = (range_vol[vol] / sum_vol) * 100
+        vol_list[vol] = round(vol_per, 2)
+    max_vol = max(range_vol)
+    mx_v_num = range_vol.index(max_vol)
+    max_point = (step_num[mx_v_num] + step_num[mx_v_num + 1]) * 0.5
+    if(abs(max_point - c_list[sta]) == 0): point_lever = 99
+    else: point_lever = c_list[sta] * 0.5 / abs(max_point - c_list[sta])
       
 #     for upp in range(now_point, len(range_vol)):
 #         upp_vol = sum(range_vol[now_point:upp+1])
@@ -220,7 +231,8 @@ def search_calc(sym_bol):
     fr_num = mid_vlist.index(max(mid_vlist))
     cal_vol = sum(range_vol[fr_num:mid_list[fr_num]+1])
     cal_per = cal_vol / sum_vol * 100
-    mid_min, mid_max = step_num[fr_num], step_num[mid_list[fr_num]+1]
+    min_margin = min_diff * 0.2
+    mid_min, mid_max = step_num[fr_num] - min_margin, step_num[mid_list[fr_num]+1] + min_margin
     min_num, max_num = fr_num, mid_list[fr_num]+1
     mid_diff = abs(mid_min - mid_max)
     mid_lever = None
@@ -245,7 +257,10 @@ def search_calc(sym_bol):
     print(sym_bol, itv, order_position, round(cal_per, 2))
     print(len(range_vol), min_num, max_num, now_point)
     print(c_list[sta], mid_min, mid_max, round(mid_per, 2), round(std_per, 2))
-    print(round(mid_lever, 2), round(upp_lever, 2), round(low_lever, 2))
+    print(round(mid_lever, 2), round(upp_lever, 2), round(low_lever, 2), round(point_lever, 2))
+#    reversed_list = c_list[sta:std+1][::-1]
+#    print(sym_bol, reversed_list)
+#    print(sym_bol, vol_list)
 
     break
 #-------------------------------------------------------------------------------
