@@ -114,107 +114,94 @@ def search_calc(sym_bol):
     xnum = h_list[sta:].index(cal_max) + sta
     nnum = l_list[sta:].index(cal_min) + sta
     cal_diff = float(int(Decimal(cal_max - cal_min) / Decimal(tick_size)) * Decimal(tick_size))
-    if(cal_diff <= (max_diff * 1)): continue
+#    if(cal_diff <= (max_diff * 1)): continue
     cal_lever = c_list[sta] * 0.5 / cal_diff
     cal_per = cal_diff / max_diff * 100
     limit_diff = cal_diff
 
-#    std_max, std_min, std_diff = cal_max, cal_min, cal_diff
-      
-    st_num, la_num = int(len(t_list) * 0.5), 0
-    max_list, now_list, tol_list = [], [], []
+#     pol_list = [0] * len(t_list)
+#     mol_list = [0] * len(t_list)
+#     vol_list = [0] * len(t_list)
+#     ol = 0
+#     for vol in range(len(t_list)-1,sta-1,-1):
+#         if(h_list[vol] != l_list[vol]):
+#             mid_vol = c_list[vol] - o_list[vol]
+#             pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
+#         else: pol_cal = 0
+#         if(pol_cal > 0): pol_list[ol], mol_list[ol] = int(pol_cal), 0
+#         if(pol_cal < 0): mol_list[ol], pol_list[ol] = int(pol_cal), 0
+#         ol += 1
+#     for sol in range(len(t_list)):
+#         vol_list[sol] = sum(pol_list[:sol+1]) + sum(mol_list[:sol+1])
+        
+    gap_num = int(cal_diff / float(tick_size))
+    if(gap_num > 100): gap_num = 100
+    step_range = float(tick_size) * gap_num
+    num = 0
+    step_num = []
+    while True:
+        step_gap = cal_min + step_range * num
+        step_num.append(step_gap)
+        num = num + 1
+        if(step_num[-1] >= cal_max): break
+    
+    st_num, la_num = int(len(t_list) * 0.9), len(t_list)
+    now_list, max_list, vol_list, res_list = [], [], [], []
     while True:
             if(st_num == 0): break
-            max_price, min_price = c_list[sta] + (max_diff * 1), c_list[sta] - (max_diff * 1)
-            for std in range(len(t_list)-1,st_num-1,-1):
-        #        if(h_list[std] <= max_price) and (l_list[std] >= min_price): break
-#            for std in range(sta, st_num):
-        #        if(h_list[std] > max_price) or (l_list[std] < min_price): break
-                std_max, std_min = max(h_list[st_num-1:]), min(l_list[st_num-1:])
-                std_diff = std_max - std_min
-                std_x_diff, std_n_diff = abs(c_list[sta] - std_max), abs(c_list[sta] - std_min)
-                std_min_diff, std_max_diff = min(std_n_diff, std_x_diff), max(std_n_diff, std_x_diff)
-                xnum = h_list[st_num-1:].index(std_max) + sta
-                nnum = l_list[st_num-1:].index(std_min) + sta
-#                if(std_diff >= abs(max_price - min_price)):
-#                    check = 1
-#                    break
-#            if(check == 0): break
-        
+            range_num = [0] * (len(step_num) - 1)
+            range_vol = range_num.copy()
             pol_list, mol_list = [], []
-            for vol in range(len(t_list)-1,st_num-1,-1):
-                if(h_list[vol] != l_list[vol]):
-                    mid_vol = c_list[vol] - o_list[vol]
-                    pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
-                if(pol_cal > 0): pol_list.append(pol_cal)
-                if(pol_cal < 0): mol_list.append(pol_cal)
-            if((sum(pol_list) * 1) > abs(sum(mol_list))): tol_list.append(1)
-            elif(abs(sum(mol_list) * 1) > (sum(pol_list))): tol_list.append(-1)
-            else: tol_list.append(0)
-            now_list.append(c_list[st_num])
-            sta = sta + 1
-            st_num = st_num - 1
-      
-# #            gap_num = int(std_diff / float(tick_size))
-#             if(gap_num > 100): gap_num = 100
-#             step_range = float(int((std_diff / gap_num) / float(tick_size)) * Decimal(tick_size))
-#         #    step_range = float(tick_size) * gap_num
-#             num = 0
-#             step_num = []
-#             now_point = 0
-#             while True:
-#                 step_gap = float(int(Decimal(std_min + step_range * num) / Decimal(tick_size)) * Decimal(tick_size))
-#                 step_num.append(step_gap)
-#                 num = num + 1
-#                 if(step_num[-1] >= std_max): break
-#             range_num = [0] * (len(step_num) - 1)
-#             range_vol = range_num.copy()
-#             for cal in range(st_num, len(t_list)):
-# #            for cal in range(sta, std - 1):
-#         #    for cal in range(len(t_list)):
-#                 for num in range(len(range_num)):
-#                     if (l_list[cal] <= step_num[num + 1] and h_list[cal] >= step_num[num]):
-#                         range_num[num] += 1
-        
-#                     if(h_list[cal] > l_list[cal]):
-#                         over_lap = max(0, min(h_list[cal], step_num[num + 1]) - max(l_list[cal], step_num[num]))
-#                         cal_vol = over_lap / (h_list[cal] - l_list[cal]) * v_list[cal]
-#                         range_vol[num] = range_vol[num] + cal_vol
-#                     else:
-#                         if(step_num[num] <= h_list[cal] < step_num[num + 1]): cal_vol = v_list[cal]
-#                         else: cal_vol = 0
-#                         range_vol[num] = range_vol[num] + cal_vol
-#                     if(step_num[num] <= c_list[sta] < step_num[num + 1]): now_point = num
-        
-#             sum_vol = sum(range_vol)
-# #            vol_list = [0] * len(range_vol)
-# #            for vol in range(len(range_vol)):
-# #                vol_per = (range_vol[vol] / sum_vol) * 100
-# #                vol_list[vol] = round(vol_per, 2)
-#             max_vol = max(range_vol)
-#             mx_v_num = range_vol.index(max_vol)
-#             upp_vol, low_vol = sum(range_vol[mx_v_num + 1:]), sum(range_vol[:mx_v_num])
-#             tol_list.append(mx_v_num)
-#             ex_max_point = (step_num[mx_v_num] + step_num[mx_v_num + 1]) * 0.5
-#             max_point = float(Decimal(int(ex_max_point / float(tick_size))) * Decimal(tick_size))
-#             max_list.append(max_point)
-#             now_list.append(c_list[st_num-1])
-#             st_num = st_num - 1
-#             sta = sta + 1
+            for cal in range(la_num-1,st_num-1,-1):
+                
+                if(h_list[cal] != l_list[cal]):
+                    mid_vol = c_list[cal] - o_list[cal]
+                    pol_cal = (mid_vol / (h_list[cal] - l_list[cal])) * v_list[cal]
+                else: pol_cal = 0
+                if(pol_cal > 0): pol_list.append(int(pol_cal)), mol_list.append(0)
+                if(pol_cal < 0): mol_list.append(int(pol_cal)), pol_list.append(0)
+                if(pol_cal == 0): mol_list.append(0), pol_list.append(0)
 
-      
-#    if(abs(max_point - c_list[sta]) == 0): point_lever = 99
-#    else: point_lever = c_list[sta] * 0.5 / abs(max_point - c_list[sta])
         
-#    std_per = std_diff / cal_diff * 100
-#    print(sym_bol, itv, order_position, round(cal_per, 2), round(point_lever, 2))
-#    print(len(range_vol), c_list[sta], max_point, round(std_per, 2))
-#    reversed_list = c_list[sta:std+1][::-1]
+                for num in range(len(range_num)):
+                    if (l_list[cal] <= step_num[num + 1] and h_list[cal] >= step_num[num]):
+                        range_num[num] += 1
+        
+                    if(h_list[cal] > l_list[cal]):
+                        over_lap = max(0, min(h_list[cal], step_num[num + 1]) - max(l_list[cal], step_num[num]))
+                        cal_vol = over_lap / (h_list[cal] - l_list[cal]) * v_list[cal]
+                        range_vol[num] = range_vol[num] + cal_vol
+                    else:
+                        if(step_num[num] <= h_list[cal] < step_num[num + 1]): cal_vol = v_list[cal]
+                        else: cal_vol = 0
+                        range_vol[num] = range_vol[num] + cal_vol
+                    if(step_num[num] <= c_list[sta] < step_num[num + 1]): now_point = num
+
+            vol_list.append(sum(pol_list) + sum(mol_list))
+        
+            max_vol = max(range_vol)
+            mx_v_num = range_vol.index(max_vol)
+            ex_max_point = (step_num[mx_v_num] + step_num[mx_v_num + 1]) * 0.5
+            max_point = float(Decimal(int(ex_max_point / float(tick_size))) * Decimal(tick_size))
+            max_list.append(max_point)
+            now_list.append(c_list[st_num-1])
+            st_num = st_num - 1
+            la_num = la_num - 1
+
+            if(now_list[-1] > max_list[-1]) and (vol_list[-1] > 0): res_list.append(1)
+            elif(now_list[-1] < max_list[-1]) and (vol_list[-1] < 0): res_list.append(-1)
+            else: res_list.append(0)
+    gap_diff = abs(now_list[-1] - max_list[-1])
+    if(gap_diff != 0): gap_lever = c_list[sta] * 0.5 / gap_diff
+    else: gap_lever = 99
+    st_num = int(len(t_list) * 0.1)  
+    reversed_list = c_list[:len(t_list)-st_num][::-1]
+    print(sym_bol, gap_lever)
 #    print(sym_bol, reversed_list)
-#    print(sym_bol, vol_list)
 #    print(sym_bol, max_list)
-    print(sym_bol, now_list)
-    print(sym_bol, tol_list)
+#    print(sym_bol, vol_list)
+#    print(sym_bol, res_list)
+#    print(sym_bol, tol_list)
     break
 #-------------------------------------------------------------------------------
   order_return = [order_position]
