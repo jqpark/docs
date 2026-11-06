@@ -147,6 +147,7 @@ def search_calc(sym_bol):
     
     st_num, la_num = int(len(t_list) * 0.7), len(t_list)
     now_list, max_list, vol_list, res_list, dif_list, gap_list = [], [], [], [], [], []
+    num_list = []
     while True:
             if(st_num == 0): break
             range_num = [0] * (len(step_num) - 1)
@@ -186,10 +187,16 @@ def search_calc(sym_bol):
         
             max_vol = max(range_vol)
             mx_v_num = range_vol.index(max_vol)
+            max_num = max(range_num)
+            mx_n_num = range_num.index(max_num)
             ex_max_point = (step_num[mx_v_num] + step_num[mx_v_num + 1]) * 0.5
             max_point = float(Decimal(int(ex_max_point / float(tick_size))) * Decimal(tick_size))
             max_list.append(max_point)
             now_list.append(c_list[st_num-1])
+
+            if(vol_list[-1] > 0): mx_z_num = 1
+            else: mx_z_num = -1
+            num_list.append([mx_v_num, mx_n_num, mx_z_num])
             
             gap_diff = abs(now_list[-1] - max_list[-1])
             gap_lever = 15
@@ -206,12 +213,13 @@ def search_calc(sym_bol):
     st_num = int(len(t_list) * 0.3)  
     reversed_list = c_list[:len(t_list)-st_num][::-1]
 #    print(sym_bol, gap_lever)
-    print(sym_bol, reversed_list)
+#    print(sym_bol, reversed_list)
 #    print(sym_bol, max_list)
 #    print(sym_bol, vol_list)
-    print(sym_bol, res_list)
-    print(sym_bol, dif_list)
-    print(sym_bol, gap_list)
+#    print(sym_bol, res_list)
+#    print(sym_bol, dif_list)
+#    print(sym_bol, gap_list)
+    print(sym_bol, num_list)
     break
 #-------------------------------------------------------------------------------
   order_return = [order_position]
