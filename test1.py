@@ -179,11 +179,12 @@ def search_calc(sym_bol):
     max_num = max(range_num)
     mx_n_num = range_num.index(max_num)
     ex_max_point = (step_num[mx_v_num] + step_num[mx_v_num + 1]) * 0.5
-    max_point = float(Decimal(int(ex_max_point / float(tick_size))) * Decimal(tick_size))
+#    max_point = float(Decimal(int(ex_max_point / float(tick_size))) * Decimal(tick_size))
+    max_point = ex_max_point
     max_list.append(max_point)
     now_list.append(c_list[st_num-1])
 
-    cal_gap = min(abs(max_point - cal_max), abs(max_point - cal_min))
+    cal_gap = min(abs(max_point - cal_max), abs(max_point - cal_min), min_diff)
     upp_gap, low_gap = max_point + cal_gap, max_point - cal_gap
     apply_num = 0
     for cal in range(la_num - 1, st_num - 1, -1):
@@ -209,12 +210,59 @@ def search_calc(sym_bol):
 
     vol_list.append(sum(pol_list) + sum(mol_list))
     upp_sum, low_sum = sum(pol_list) + sum(mol_list), abs(sum(pol_list)) + abs(sum(mol_list))
+    if(sum(mol_list) == 0): upp_per = 100
+    else: upp_per = abs(sum(pol_list)) / abs(sum(mol_list)) * 100
+    if(sum(pol_list) == 0): low_per = 100
+    else: low_per = abs(sum(mol_list)) / abs(sum(pol_list)) * 100
     if(low_sum == 0): vol_per = 100
     else: vol_per = upp_sum / low_sum * 100
     cal_gap_per = (cal_gap * 2) / cal_diff * 100
     c_std_per = (c_list[0] - cal_min) / cal_diff * 100 
     p_std_per = (max_point - cal_min) / cal_diff * 100 
 
+    pon_list, mon_list = [], []
+    for vol in range(la_num - 1, st_num - 1, -1):
+        if(h_list[vol] != l_list[vol]):
+            mid_vol = c_list[vol] - o_list[vol]
+            pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
+        else: pol_cal = 0
+        value = int(pol_cal)
+        pon_list.append(max(value, 0))
+        mon_list.append(min(value, 0))
+    ton_sum = abs(sum(pon_list)) + abs(sum(mon_list))
+    if(sum(mon_list) == 0): upn_per = 100
+    else: upn_per = abs(sum(pon_list)) / abs(sum(mon_list)) * 100
+    if(sum(pon_list) == 0): lon_per = 100
+    else: lon_per = abs(sum(mon_list)) / abs(sum(pon_list)) * 100
+
+    for point in range(la_num - 1, st_num - 1, -1):
+        if(h_list[point] >= max_point >= l_list[point]): break
+    if(point == 0): pot_maxp, pot_minp = cal_max, cal_min
+    else: pot_maxp, pot_minp = max(h_list[:point]), min(l_list[:point])
+    pot_diff = pot_maxp - pot_minp
+    if(pot_diff == 0): pot_lever = 99
+    else: pot_lever = c_list[st_num-1] * 0.5 / pot_diff
+    if(abs(max_point - pot_maxp) == 0): maxp_lever = 99
+    else: maxp_lever = c_list[st_num-1] * 0.5 / abs(max_point - pot_maxp)
+    if(abs(max_point - pot_minp) == 0): minp_lever = 99
+    else: minp_lever = c_list[st_num-1] * 0.5 / abs(max_point - pot_minp)
+
+    pot_list, mot_list = [], []
+    for vol in range(point - 1, st_num - 1, -1):
+        if(h_list[vol] != l_list[vol]):
+            mid_vol = c_list[vol] - o_list[vol]
+            pol_cal = (mid_vol / (h_list[vol] - l_list[vol])) * v_list[vol]
+        else: pol_cal = 0
+        value = int(pol_cal)
+        pot_list.append(max(value, 0))
+        mot_list.append(min(value, 0))
+    tot_sum = abs(sum(pot_list)) + abs(sum(mot_list))
+    if(sum(mot_list) == 0): upt_per = 100
+    else: upt_per = abs(sum(pot_list)) / abs(sum(mot_list)) * 100
+    if(sum(pot_list) == 0): lot_per = 100
+    else: lot_per = abs(sum(mot_list)) / abs(sum(pot_list)) * 100
+
+    sum_per = tot_sum / ton_sum * 100
 
     if(vol_list[-1] > 0): mx_z_num = 1
     else: mx_z_num = -1
@@ -241,8 +289,9 @@ def search_calc(sym_bol):
 #    print(sym_bol, res_list)
 #    print(sym_bol, dif_list)
 #    print(sym_bol, gap_list)
-    print(sym_bol, max_point, round(cal_gap_per,2), apply_num)
-    print(sym_bol, round(c_std_per,2), round(p_std_per,2), round(vol_per,2))
+    print(sym_bol, max_point, point)
+    print(sym_bol, round(pot_lever,2), round(maxp_lever,2), round(minp_lever,2))
+    print(sym_bol, round(upn_per,2), round(lon_per,2), round(upt_per,2), round(lot_per,2), round(sum_per,2))
     break
 #-------------------------------------------------------------------------------
   order_return = [order_position]
