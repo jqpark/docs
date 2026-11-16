@@ -88,6 +88,8 @@ def search_calc(sym_bol):
 
   instruments_info = session.get_instruments_info(category="linear",symbol=sym_bol)['result']['list']
   tick_size = pd.DataFrame(instruments_info)['priceFilter'][0]['tickSize']
+  symbol_type = pd.DataFrame(instruments_info)['symbolType'][0]
+  print(sym_bol, symbol_type)
 
   itv_list = [3, 5, 15, 30, 60, 120, 240, 360, 720]
   for itv in itv_list:
@@ -167,9 +169,9 @@ def search_calc(sym_bol):
                 range_vol[num] = range_vol[num] + cal_vol
             if(step_num[num] <= c_list[sta] < step_num[num + 1]): now_point = num
 
-    num_diff = abs(c_list[st_num-1] - c_list[la_num-1])
+    num_diff = abs(c_list[st_num] - c_list[la_num])
     num_lever = 15
-    if(num_diff != 0): num_lever = c_list[st_num-1] * 0.5 / num_diff
+    if(num_diff != 0): num_lever = c_list[st_num] * 0.5 / num_diff
     if(abs(num_lever) > 15): num_lever = 15
     dif_list.append(round(num_lever, 2))
 
@@ -181,7 +183,7 @@ def search_calc(sym_bol):
 #    max_point = float(Decimal(int(ex_max_point / float(tick_size))) * Decimal(tick_size))
     max_point = ex_max_point
     max_list.append(max_point)
-    now_list.append(c_list[st_num-1])
+    now_list.append(c_list[st_num])
 
     cal_gap = min(abs(max_point - cal_max), abs(max_point - cal_min), min_diff)
     upp_gap, low_gap = max_point + cal_gap, max_point - cal_gap
@@ -294,7 +296,7 @@ def search_calc(sym_bol):
 #    print(sym_bol, dif_list)
 #    print(sym_bol, gap_list)
     print(sym_bol, max_point, point)
-    print(sym_bol, round(pot_lever,2), round(maxp_lever,2), round(minp_lever,2), round(maxc_lever,2), round(minc_lever,2))
+    print(sym_bol, round(pot_lever,2), round(maxp_lever,2), round(minp_lever,2), round(maxc_lever,2), round(minc_lever,2), round(gap_lever, 2))
     print(sym_bol, round(upn_per,2), round(lon_per,2), round(upt_per,2), round(lot_per,2), round(sum_per,2))
     break
 #-------------------------------------------------------------------------------
